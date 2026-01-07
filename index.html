@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta jubilacion ERE26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Vista de Login -->
+    <div id="login-view" class="container login-container">
+        <div class="card login-card">
+            <h1><i class="fas fa-lock"></i> Acceso ERE 2026</h1>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Correo Electrónico</label>
+                    <input type="email" id="login-email" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="******">
+                </div>
+                <div class="auth-buttons">
+                    <button type="submit" class="btn-save">Entrar</button>
+                    <button type="button" id="btn-signup" class="btn-secondary">Crear Usuario</button>
+                </div>
+                <p id="login-error" class="error-msg"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vista Principal de la Aplicación (Oculta por defecto) -->
+    <div id="app-view" style="display: none;">
+    <header class="main-header">
+        <div class="container header-content">
+            <h1><i class="fas fa-chart-pie"></i> Gestión ERE 2026</h1>
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i> <span id="user-display">Usuario</span>
+                <button id="btn-logout" class="btn-logout" title="Cerrar Sesión"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container dashboard">
+        <div class="card" id="card-personal">
+            <div class="icon-wrapper"><i class="fas fa-id-card"></i></div>
+            <h2>Datos Personales</h2>
+            <p>Gestiona tu perfil, antigüedad y datos de contacto.</p>
+        </div>
+
+        <div class="card" id="card-economic">
+            <div class="icon-wrapper"><i class="fas fa-coins"></i></div>
+            <h2>Datos Económicos</h2>
+            <p>Consulta tu indemnización, paro y complementos.</p>
+        </div>
+
+        <div class="card" id="card-simulation">
+            <div class="icon-wrapper"><i class="fas fa-calculator"></i></div>
+            <h2>Simulación Anual</h2>
+            <p>Proyecta tus ingresos netos y retenciones fiscales.</p>
+        </div>
+    </main>
+
+    <!-- Modal Datos Personales -->
+    <div id="modal-personal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2><i class="fas fa-user-edit"></i> Editar Datos Personales</h2>
+            <form id="form-personal">
+                <div class="form-group">
+                    <label for="nombre">Nombre Completo</label>
+                    <input type="text" id="nombre" name="nombre" required placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" name="email" required placeholder="juan@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label for="nacimiento">Fecha de Nacimiento</label>
+                    <input type="date" id="nacimiento" name="nacimiento" required>
+                </div>
+                <button type="submit" class="btn-save">Guardar Datos</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Datos Económicos -->
+    <div id="modal-economic" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close-modal" data-target="modal-economic">&times;</span>
+            <h2><i class="fas fa-coins"></i> Datos Económicos</h2>
+            <form id="form-economic">
+                <div class="modal-grid">
+                    <!-- Columna Izquierda: Inputs -->
+                    <div class="input-column">
+                        <h3>Conceptos Mensuales (€)</h3>
+                        <div class="form-group">
+                            <label>Salario Bruto</label>
+                            <input type="number" step="0.01" id="eco-salario" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Antigüedad</label>
+                            <input type="number" step="0.01" id="eco-antiguedad" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Subida Salarial (% y €)</label>
+                            <div class="split-inputs">
+                                <input type="number" step="0.01" id="eco-subida-pct" placeholder="%">
+                                <input type="number" step="0.01" id="eco-subida-importe" placeholder="0.00 €" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Consolidación</label>
+                            <input type="number" step="0.01" id="eco-consolidacion" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Otros</label>
+                            <input type="number" step="0.01" id="eco-otros" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Importe Exención IRPF</label>
+                            <input type="number" step="0.01" id="eco-exencion" placeholder="0.00" style="border-color: #ef4444;">
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Resultados -->
+                    <div class="results-column">
+                        <h3>Cálculos Estimados</h3>
+                        
+                        <div class="result-group">
+                            <label>Salario Base (hasta 63 años)</label>
+                            <div class="result-value" id="res-base63">0.00 €</div>
+                            <small class="hint">Suma Conceptos x 15 x 62%</small>
+                        </div>
+
+                        <div class="result-group">
+                            <label>Mensual (hasta 63 años)</label>
+                            <div class="result-value highlight" id="res-mensual63">0.00 €</div>
+                            <small class="hint">Anterior / 12</small>
+                        </div>
+
+                        <div class="result-group">
+                            <label>Salario Base (63-65 años)</label>
+                            <div class="result-value" id="res-base65">0.00 €</div>
+                            <small class="hint">Suma Conceptos x 15 x 34%</small>
+                        </div>
+
+                        <div class="result-group">
+                            <label>Mensual (63-65 años)</label>
+                            <div class="result-value highlight" id="res-mensual65">0.00 €</div>
+                            <small class="hint">Anterior / 12</small>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-save" style="margin-top: 1rem;">Guardar Datos Económicos</button>
+            </form>
+        </div>
+    </div>
+    </div> <!-- Fin de app-view -->
+
+<!-- Scripts de Firebase y de la aplicación -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="js/index.js"></script>
+
+</body>
+</html>
