@@ -451,6 +451,8 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
 
     let rowsGenerated = 0;
     let mesesParo = 0; // Contador de meses de paro consumidos
+    let annualTotal = 0;
+    let grandTotal = 0;
 
     // Bucle mes a mes hasta los 65 años
     while (currentDate < date65) {
@@ -459,11 +461,22 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
 
         // Nueva fila de Año y Cabecera si cambia el año
         if (year !== currentYear) {
+            // Si no es el primer año, imprimimos el subtotal del año anterior
+            if (currentYear !== -1) {
+                const trSubtotal = document.createElement('tr');
+                trSubtotal.style.backgroundColor = '#f8fafc';
+                trSubtotal.innerHTML = `
+                    <td colspan="11" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+                    <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
+                `;
+                table.appendChild(trSubtotal);
+                annualTotal = 0;
+            }
             currentYear = year;
             
             // Fila AÑO
             const trYear = document.createElement('tr');
-            trYear.innerHTML = `<td colspan="10" class="year-row">${year}</td>`;
+            trYear.innerHTML = `<td colspan="12" class="year-row">${year}</td>`;
             table.appendChild(trYear);
 
             // Fila Cabeceras
@@ -472,14 +485,16 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             trHeader.innerHTML = `
                 <th>Mes</th>
                 <th>Edad</th>
-                <th>%</th>
-                <th>Imp. Empresa</th>
-                <th>Movistar</th>
-                <th>Seg. Vida</th>
-                <th>Seg. Salud</th>
-                <th>Paro</th>
-                <th>IRPF</th>
-                <th>Total</th>
+                <th style="text-align: right;">%</th>
+                <th style="text-align: right;">Imp. Empresa</th>
+                <th style="text-align: right;">Movistar</th>
+                <th style="text-align: right;">Seg. Vida</th>
+                <th style="text-align: right;">Seg. Salud</th>
+                <th style="text-align: right;">Suma T</th>
+                <th style="text-align: right;">Pend. Exen.</th>
+                <th style="text-align: right;">Paro</th>
+                <th style="text-align: right;">IRPF</th>
+                <th style="text-align: right;">Total</th>
             `;
             table.appendChild(trHeader);
         }
@@ -519,6 +534,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         // Consumo mensual del límite = Lo que paga la empresa (Cash + Especie)
         // Asumimos que Movistar y Seguros son retribución en especie que consume límite
         const consumoMensual = importeEmpresa + movistar + seguroVida + seguroSalud;
+        const sumaT = consumoMensual; // Alias para la columna "Suma T"
         
         let irpf = 0;
         
@@ -544,10 +560,16 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             irpf = consumoMensual * 0.19;
         }
 
+        // Pendiente de Exención (Lo que queda de la bolsa)
+        const pendienteExencion = Math.max(0, limiteGlobal - acumuladoExencion);
+
         // Total Neto (Cash Flow)
         // Asumimos: Total = (Importe Empresa + Paro) - IRPF
         // (Movistar y Seguros no se suman al neto porque suelen ser pago directo de la empresa)
         const total = (importeEmpresa + paroMes) - irpf;
+        
+        annualTotal += total;
+        grandTotal += total;
 
         // Renderizar Fila
         const tr = document.createElement('tr');
@@ -555,14 +577,16 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         tr.innerHTML = `
             <td style="text-transform: capitalize;">${monthName}</td>
             <td>${edadTexto}</td>
-            <td>${pct}%</td>
-            <td>${fmt(importeEmpresa)}</td>
-            <td>${fmt(movistar)}</td>
-            <td>${fmt(seguroVida)}</td>
-            <td>${fmt(seguroSalud)}</td>
-            <td>${fmt(paroMes)}</td>
-            <td style="${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
-            <td style="font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
+            <td style="text-align: right;">${pct}%</td>
+            <td style="text-align: right;">${fmt(importeEmpresa)}</td>
+            <td style="text-align: right;">${fmt(movistar)}</td>
+            <td style="text-align: right;">${fmt(seguroVida)}</td>
+            <td style="text-align: right;">${fmt(seguroSalud)}</td>
+            <td style="text-align: right; font-weight: bold; color: var(--secondary);">${fmt(sumaT)}</td>
+            <td style="text-align: right; color: var(--text-muted);">${fmt(pendienteExencion)}</td>
+            <td style="text-align: right;">${fmt(paroMes)}</td>
+            <td style="text-align: right; ${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
+            <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
         `;
         table.appendChild(tr);
 
@@ -572,6 +596,25 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     }
 
     if (rowsGenerated > 0) {
+        // Subtotal del último año
+        const trSubtotal = document.createElement('tr');
+        trSubtotal.style.backgroundColor = '#f8fafc';
+        trSubtotal.innerHTML = `
+            <td colspan="11" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+            <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
+        `;
+        table.appendChild(trSubtotal);
+
+        // Gran Total Acumulado
+        const trGrandTotal = document.createElement('tr');
+        trGrandTotal.style.backgroundColor = '#e0e7ff';
+        trGrandTotal.style.borderTop = '2px solid var(--primary)';
+        trGrandTotal.innerHTML = `
+            <td colspan="11" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
+            <td style="text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark);">${fmt(grandTotal)}</td>
+        `;
+        table.appendChild(trGrandTotal);
+
         container.appendChild(table);
     } else {
         container.innerHTML = '<p>No se han generado datos para el rango de fechas seleccionado.</p>';
