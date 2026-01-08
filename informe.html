@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe Detallado - ERE26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <h1><i class="fas fa-file-invoice-dollar"></i> Informe de Simulación</h1>
+            <div class="user-info">
+                <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card" style="text-align: left; min-height: 60vh;">
+            <h2>Detalle de Simulación Anual</h2>
+            
+            <!-- Cabecera de Resumen -->
+            <div class="report-summary-box">
+                <div class="summary-item">
+                    <label>Nombre</label>
+                    <span id="rep-nombre" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <label>F. Nacimiento</label>
+                    <span id="rep-nacimiento" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <label>Base hasta 63 años</label>
+                    <span id="rep-base63" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <label>Base 63-65 años</label>
+                    <span id="rep-base65" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <label>Límite Exención</label>
+                    <span id="rep-limite" class="summary-value">-</span>
+                </div>
+                <div class="summary-item input-item">
+                    <label>Fecha Inicio Simulación</label>
+                    <input type="date" id="rep-fecha-inicio" class="summary-input">
+                </div>
+            </div>
+
+            <!-- Contenedor para el contenido dinámico que definiremos a continuación -->
+            <div id="report-content">
+                <div id="simulation-table-container"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Botón Flotante de Imprimir -->
+    <button id="btn-print" class="fab-print" title="Imprimir Informe">
+        <i class="fas fa-print"></i>
+    </button>
+
+    <!-- Scripts de Firebase y de la aplicación -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

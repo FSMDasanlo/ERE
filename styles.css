@@ -331,3 +331,136 @@ body {
         grid-template-columns: 1fr; /* Una columna en móviles */
     }
 }
+
+/* Exemption Box Styles */
+.exemption-box {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #fff1f2; /* Fondo rojizo muy suave */
+    border: 1px solid #fda4af;
+    border-radius: 0.5rem;
+}
+
+.exemption-box h3 {
+    margin-top: 0;
+    color: #9f1239; /* Rojo oscuro */
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.exemption-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+/* Report Summary Box */
+.report-summary-box {
+    background-color: #eff6ff; /* Azul muy claro */
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    align-items: center;
+}
+
+.summary-item label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.summary-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.summary-input {
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+
+/* Simulation Table Styles */
+.year-row {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.header-row th {
+    background-color: #e2e8f0;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sim-table td {
+    font-size: 0.9rem;
+}
+
+/* Floating Print Button */
+.fab-print {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background-color: var(--primary);
+    color: white;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    border: none;
+    box-shadow: var(--shadow-hover);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background-color 0.2s;
+    z-index: 100;
+}
+
+.fab-print:hover {
+    transform: scale(1.1);
+    background-color: var(--primary-dark);
+}
+
+/* Print Styles - Vista Limpia para PDF */
+@media print {
+    .fab-print, .main-header, .btn-secondary {
+        display: none !important;
+    }
+
+    body {
+        background-color: white;
+    }
+
+    .card {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    
+    /* Asegura que los colores de fondo (como la fila del año) se impriman */
+    .year-row {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

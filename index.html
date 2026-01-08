@@ -120,10 +120,6 @@
                             <label>Otros</label>
                             <input type="number" step="0.01" id="eco-otros" placeholder="0.00">
                         </div>
-                        <div class="form-group">
-                            <label>Importe Exención IRPF</label>
-                            <input type="number" step="0.01" id="eco-exencion" placeholder="0.00" style="border-color: #ef4444;">
-                        </div>
                     </div>
 
                     <!-- Columna Derecha: Resultados -->
@@ -155,6 +151,30 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Caja de Desglose de Exenciones -->
+                <div class="exemption-box">
+                    <h3><i class="fas fa-hand-holding-usd"></i> Desglose Exención IRPF (Mensual)</h3>
+                    <div class="exemption-grid">
+                        <div class="form-group">
+                            <label>Límite Global</label>
+                            <input type="number" step="0.01" id="exen-limite" placeholder="0.00" readonly style="background-color: #f9fafb;">
+                        </div>
+                        <div class="form-group">
+                            <label>Movistar</label>
+                            <input type="number" step="0.01" id="exen-movistar" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Seguro Médico</label>
+                            <input type="number" step="0.01" id="exen-seguro" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Seguro de Vida</label>
+                            <input type="number" step="0.01" id="exen-vida" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-save" style="margin-top: 1rem;">Guardar Datos Económicos</button>
             </form>
         </div>

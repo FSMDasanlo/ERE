@@ -46,14 +46,31 @@ function initApp() {
     auth.onAuthStateChanged(user => {
         if (user) {
             console.log('Usuario logueado:', user.email);
-            loginView.style.display = 'none';
-            appView.style.display = 'block';
-            userDisplay.textContent = user.email;
-            // Aquí podrías cargar datos iniciales si fuera necesario
+            if (loginView && appView) {
+                loginView.style.display = 'none';
+                appView.style.display = 'block';
+                if(userDisplay) userDisplay.textContent = user.email;
+            }
+            // Si estamos en la página de informe, cargaríamos datos aquí
+            if (window.location.pathname.includes('informe.html')) {
+                loadReportData();
+                
+                // Listener para regenerar tabla al cambiar fecha
+                const dateInput = document.getElementById('rep-fecha-inicio');
+                if(dateInput) {
+                    // Usamos 'input' para que sea más inmediato y 'change' por compatibilidad
+                    dateInput.addEventListener('input', loadReportData);
+                }
+            }
         } else {
             console.log('No hay usuario logueado');
-            appView.style.display = 'none';
-            loginView.style.display = 'flex';
+            if (appView && loginView) {
+                appView.style.display = 'none';
+                loginView.style.display = 'flex';
+            } else if (window.location.pathname.includes('informe.html')) {
+                // Si estamos en informe y no hay usuario, volver al login
+                window.location.href = 'index.html';
+            }
         }
     });
 
@@ -110,6 +127,12 @@ function initApp() {
     if(cardSimulation) {
         cardSimulation.addEventListener('click', () => navigateTo('simulation'));
     }
+
+    // Manejar Botón de Imprimir
+    const btnPrint = document.getElementById('btn-print');
+    if(btnPrint) {
+        btnPrint.addEventListener('click', () => window.print());
+    }
 }
 
 function navigateTo(section) {
@@ -124,6 +147,7 @@ function navigateTo(section) {
                 document.getElementById('email').value = auth.currentUser.email;
             }
             if(modal) modal.style.display = 'block';
+            loadPersonalData(); // Cargar datos personales guardados
             break;
         case 'economic':
             const modalEco = document.getElementById('modal-economic');
@@ -131,7 +155,8 @@ function navigateTo(section) {
             loadEconomicData(); // Cargar datos si existen
             break;
         case 'simulation':
-            alert('Iniciando Simulación Anual...');
+            // Navegar a la página de informe
+            window.location.href = 'informe.html';
             break;
     }
 }
@@ -225,6 +250,21 @@ function savePersonalData(e) {
     });
 }
 
+function loadPersonalData() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    db.collection('empleados').doc(user.uid).get().then((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.nombre) document.getElementById('nombre').value = data.nombre;
+            if (data.nacimiento) document.getElementById('nacimiento').value = data.nacimiento;
+        }
+    }).catch((error) => {
+        console.error("Error al cargar datos personales:", error);
+    });
+}
+
 function calculateEconomic() {
     // Obtener valores (0 si está vacío)
     const getVal = (id) => Number(document.getElementById(id).value) || 0;
@@ -239,7 +279,6 @@ function calculateEconomic() {
 
     const consolidacion = getVal('eco-consolidacion');
     const otros = getVal('eco-otros');
-    const exencion = getVal('eco-exencion');
 
     // Suma de conceptos positivos
     const sumaConceptos = salario + antiguedad + subidaImporte + consolidacion + otros;
@@ -266,6 +305,10 @@ function calculateEconomic() {
     document.getElementById('res-mensual63').textContent = fmt(mensual63);
     document.getElementById('res-base65').textContent = fmt(base65);
     document.getElementById('res-mensual65').textContent = fmt(mensual65);
+
+    // Cálculo del Límite Global (Base Anual Total * 2.56)
+    const limiteGlobal = (baseCalculo * 15) * 2.56;
+    document.getElementById('exen-limite').value = limiteGlobal.toFixed(2);
 }
 
 function saveEconomicData(e) {
@@ -280,7 +323,10 @@ function saveEconomicData(e) {
         eco_subida: Number(document.getElementById('eco-subida-importe').value), // Guardamos el importe calculado
         eco_consolidacion: Number(document.getElementById('eco-consolidacion').value),
         eco_otros: Number(document.getElementById('eco-otros').value),
-        eco_exencion: Number(document.getElementById('eco-exencion').value),
+        exen_limite: Number(document.getElementById('exen-limite').value),
+        exen_movistar: Number(document.getElementById('exen-movistar').value),
+        exen_seguro: Number(document.getElementById('exen-seguro').value),
+        exen_vida: Number(document.getElementById('exen-vida').value),
         fechaActualizacionEco: new Date()
     };
 
@@ -305,7 +351,10 @@ function loadEconomicData() {
             if(data.eco_subida_pct) document.getElementById('eco-subida-pct').value = data.eco_subida_pct;
             if(data.eco_consolidacion) document.getElementById('eco-consolidacion').value = data.eco_consolidacion;
             if(data.eco_otros) document.getElementById('eco-otros').value = data.eco_otros;
-            if(data.eco_exencion) document.getElementById('eco-exencion').value = data.eco_exencion;
+            if(data.exen_limite) document.getElementById('exen-limite').value = data.exen_limite;
+            if(data.exen_movistar) document.getElementById('exen-movistar').value = data.exen_movistar;
+            if(data.exen_seguro) document.getElementById('exen-seguro').value = data.exen_seguro;
+            if(data.exen_vida) document.getElementById('exen-vida').value = data.exen_vida;
             
             // Recalcular con los datos cargados
             calculateEconomic();
@@ -313,4 +362,218 @@ function loadEconomicData() {
     }).catch((error) => {
         console.log("Error al cargar datos:", error);
     });
+}
+
+function loadReportData() {
+    console.log("Cargando datos del informe...");
+    const user = auth.currentUser;
+    if (!user) return;
+
+    db.collection('empleados').doc(user.uid).get().then((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            
+            // 1. Datos Personales
+            document.getElementById('rep-nombre').textContent = data.nombre || '-';
+            
+            if (data.nacimiento) {
+                const dateParts = data.nacimiento.split('-'); // Viene como YYYY-MM-DD
+                document.getElementById('rep-nacimiento').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            }
+
+            // 2. Datos Económicos (Recalcular bases)
+            const salario = data.eco_salario || 0;
+            const antiguedad = data.eco_antiguedad || 0;
+            const subida = data.eco_subida || 0; // Importe ya calculado guardado
+            const consolidacion = data.eco_consolidacion || 0;
+            const otros = data.eco_otros || 0;
+            
+            const sumaConceptos = salario + antiguedad + subida + consolidacion + otros;
+            
+            // Cálculos de bases anuales
+            const base63 = sumaConceptos * 15 * 0.62;
+            const base65 = sumaConceptos * 15 * 0.34;
+            // Recalculamos el límite para asegurar que usa la fórmula correcta (Total Anual * 2.56)
+            const limite = (sumaConceptos * 15) * 2.56;
+
+            const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+
+            document.getElementById('rep-base63').textContent = fmt(base63);
+            document.getElementById('rep-base65').textContent = fmt(base65);
+            document.getElementById('rep-limite').textContent = fmt(limite);
+
+            // 3. Generar Tabla de Simulación
+            const fechaInicio = document.getElementById('rep-fecha-inicio').value;
+            if (fechaInicio && data.nacimiento) {
+                renderSimulationTable(data, fechaInicio, sumaConceptos, limite);
+            } else {
+                console.log("Falta fecha de inicio o fecha de nacimiento para generar la tabla.");
+            }
+        }
+    }).catch((error) => {
+        console.error("Error al cargar datos del informe:", error);
+    });
+}
+
+function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal) {
+    console.log(`Generando tabla. Inicio: ${fechaInicioStr}, Nacimiento: ${data.nacimiento}`);
+    const container = document.getElementById('simulation-table-container');
+    container.innerHTML = ''; // Limpiar tabla anterior
+
+    const table = document.createElement('table');
+    table.className = 'sim-table';
+    
+    // Fechas clave
+    let currentDate = new Date(fechaInicioStr);
+    // Ajustar al día 1 del mes para evitar problemas de saltos
+    currentDate.setDate(1); 
+    
+    const birthDate = new Date(data.nacimiento);
+    const date65 = new Date(birthDate);
+    date65.setFullYear(birthDate.getFullYear() + 65);
+
+    // Validación: Si la fecha de inicio es posterior a la jubilación
+    if (currentDate >= date65) {
+        container.innerHTML = '<p style="color: #ef4444; padding: 1rem;">La fecha de inicio seleccionada es posterior a la fecha de jubilación (65 años). Por favor, selecciona una fecha anterior.</p>';
+        return;
+    }
+
+    // Conceptos fijos
+    const movistar = data.exen_movistar || 0;
+    const seguroVida = data.exen_vida || 0;
+    const seguroSalud = data.exen_seguro || 0;
+    const paroBase = 1225;
+
+    // Variables de control
+    let currentYear = -1;
+    let acumuladoExencion = 0;
+    const fmt = (num) => num.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    let rowsGenerated = 0;
+    let mesesParo = 0; // Contador de meses de paro consumidos
+
+    // Bucle mes a mes hasta los 65 años
+    while (currentDate < date65) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth(); // 0-11
+
+        // Nueva fila de Año y Cabecera si cambia el año
+        if (year !== currentYear) {
+            currentYear = year;
+            
+            // Fila AÑO
+            const trYear = document.createElement('tr');
+            trYear.innerHTML = `<td colspan="10" class="year-row">${year}</td>`;
+            table.appendChild(trYear);
+
+            // Fila Cabeceras
+            const trHeader = document.createElement('tr');
+            trHeader.className = 'header-row';
+            trHeader.innerHTML = `
+                <th>Mes</th>
+                <th>Edad</th>
+                <th>%</th>
+                <th>Imp. Empresa</th>
+                <th>Movistar</th>
+                <th>Seg. Vida</th>
+                <th>Seg. Salud</th>
+                <th>Paro</th>
+                <th>IRPF</th>
+                <th>Total</th>
+            `;
+            table.appendChild(trHeader);
+        }
+
+        // Cálculos del mes
+        // Edad
+        let ageYears = year - birthDate.getFullYear();
+        let ageMonths = month - birthDate.getMonth();
+        if (ageMonths < 0) {
+            ageYears--;
+            ageMonths += 12;
+        }
+        const edadTexto = `${ageYears}a ${ageMonths}m`;
+
+        // Porcentaje y Base (Cambia a los 63 años)
+        // Consideramos que cumple 63 en el mes de su cumpleaños
+        const isUnder63 = (ageYears < 63); 
+        const pct = isUnder63 ? 62 : 34;
+        
+        // Objetivo Mensual (Lo que se debería cobrar en total bruto antes de especies)
+        // Base Anual = sumaConceptos * 15
+        const baseAnual = sumaConceptos * 15;
+        const objetivoMensual = (baseAnual * (pct / 100)) / 12;
+
+        // Lógica de Paro (Máximo 24 meses)
+        let paroMes = 0;
+        if (mesesParo < 24) {
+            paroMes = paroBase;
+            mesesParo++;
+        }
+
+        // La empresa paga la diferencia entre el objetivo y el paro
+        // Si se acaba el paro, la empresa paga todo el objetivo
+        const importeEmpresa = Math.max(0, objetivoMensual - paroMes);
+
+        // Cálculo IRPF y Exención
+        // Consumo mensual del límite = Lo que paga la empresa (Cash + Especie)
+        // Asumimos que Movistar y Seguros son retribución en especie que consume límite
+        const consumoMensual = importeEmpresa + movistar + seguroVida + seguroSalud;
+        
+        let irpf = 0;
+        
+        // Lógica de Exención
+        if (acumuladoExencion < limiteGlobal) {
+            // Aún tenemos "saldo" de exención
+            if ((acumuladoExencion + consumoMensual) <= limiteGlobal) {
+                // Todo el mes es exento
+                irpf = 0;
+                acumuladoExencion += consumoMensual;
+            } else {
+                // Se agota el límite a mitad de este mes
+                const parteExenta = limiteGlobal - acumuladoExencion;
+                const parteGravada = consumoMensual - parteExenta;
+                acumuladoExencion = limiteGlobal; // Límite alcanzado
+                
+                // Aplicamos una retención estimada a la parte gravada (ej. 19% base)
+                // Nota: Esto es una estimación, ya que no tenemos tipo impositivo del usuario
+                irpf = parteGravada * 0.19; 
+            }
+        } else {
+            // Límite ya agotado, todo tributa
+            irpf = consumoMensual * 0.19;
+        }
+
+        // Total Neto (Cash Flow)
+        // Asumimos: Total = (Importe Empresa + Paro) - IRPF
+        // (Movistar y Seguros no se suman al neto porque suelen ser pago directo de la empresa)
+        const total = (importeEmpresa + paroMes) - irpf;
+
+        // Renderizar Fila
+        const tr = document.createElement('tr');
+        const monthName = currentDate.toLocaleString('es-ES', { month: 'long' });
+        tr.innerHTML = `
+            <td style="text-transform: capitalize;">${monthName}</td>
+            <td>${edadTexto}</td>
+            <td>${pct}%</td>
+            <td>${fmt(importeEmpresa)}</td>
+            <td>${fmt(movistar)}</td>
+            <td>${fmt(seguroVida)}</td>
+            <td>${fmt(seguroSalud)}</td>
+            <td>${fmt(paroMes)}</td>
+            <td style="${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
+            <td style="font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
+        `;
+        table.appendChild(tr);
+
+        // Avanzar mes
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        rowsGenerated++;
+    }
+
+    if (rowsGenerated > 0) {
+        container.appendChild(table);
+    } else {
+        container.innerHTML = '<p>No se han generado datos para el rango de fechas seleccionado.</p>';
+    }
 }
