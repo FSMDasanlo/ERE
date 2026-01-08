@@ -377,7 +377,7 @@ body {
     margin-bottom: 2rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 2rem;
     align-items: center;
 }
 
@@ -405,6 +405,12 @@ body {
     border: 1px solid #cbd5e1;
     border-radius: 0.25rem;
     font-size: 0.9rem;
+}
+
+.summary-full-row {
+    flex-basis: 100%;
+    border-bottom: 1px solid #bfdbfe;
+    padding-bottom: 1rem;
 }
 
 /* Simulation Table Styles */
