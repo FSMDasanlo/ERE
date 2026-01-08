@@ -33,6 +33,7 @@ function initApp() {
     const loginForm = document.getElementById('login-form');
     const btnSignup = document.getElementById('btn-signup');
     const btnLogout = document.getElementById('btn-logout');
+    const btnResetPassword = document.getElementById('btn-reset-password');
     const userDisplay = document.getElementById('user-display');
 
     // Elementos del Modal
@@ -86,6 +87,11 @@ function initApp() {
         btnSignup.addEventListener('click', handleRegister);
     }
 
+    // Manejar Recuperación de Contraseña
+    if(btnResetPassword) {
+        btnResetPassword.addEventListener('click', handlePasswordReset);
+    }
+
     // Manejar Logout
     if(btnLogout) {
         btnLogout.addEventListener('click', () => {
@@ -134,6 +140,17 @@ function initApp() {
     const btnPrint = document.getElementById('btn-print');
     if(btnPrint) {
         btnPrint.addEventListener('click', () => window.print());
+    }
+
+    // Manejar Botón Cerrar en Login
+    const btnCloseLogin = document.getElementById('btn-close-login');
+    if(btnCloseLogin) {
+        btnCloseLogin.addEventListener('click', () => {
+            if(confirm("¿Deseas cerrar la aplicación?")) {
+                window.close();
+                // Nota: Si el navegador bloquea el cierre, no pasará nada.
+            }
+        });
     }
 }
 
@@ -184,6 +201,32 @@ function handleLogin(e) {
             if (error.code === 'auth/operation-not-allowed') message = "El acceso por correo no está habilitado en Firebase.";
             if (error.code === 'auth/too-many-requests') message = "Demasiados intentos. Prueba más tarde.";
             
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        });
+}
+
+function handlePasswordReset(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const errorMsg = document.getElementById('login-error');
+
+    if (!email) {
+        errorMsg.textContent = "Por favor, escribe tu correo electrónico arriba para recuperar la contraseña.";
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    auth.sendPasswordResetEmail(email)
+        .then(() => {
+            alert("Se ha enviado un correo de recuperación a " + email + ". Revisa tu bandeja de entrada.");
+            errorMsg.style.display = 'none';
+        })
+        .catch((error) => {
+            console.error(error);
+            let message = "Error al enviar el correo de recuperación.";
+            if (error.code === 'auth/user-not-found') message = "No existe un usuario con este correo.";
+            if (error.code === 'auth/invalid-email') message = "El correo electrónico no es válido.";
             errorMsg.textContent = message;
             errorMsg.style.display = 'block';
         });
@@ -273,6 +316,10 @@ function calculateEconomic() {
 
     const salario = getVal('eco-salario');
     const antiguedad = getVal('eco-antiguedad');
+
+    // Obtener porcentajes configurados (o valores por defecto)
+    const pct63 = getVal('eco-pct63') || 62;
+    const pct65 = getVal('eco-pct65') || 34;
     
     // Cálculo de Subida Salarial (Porcentaje sobre Salario Bruto)
     const subidaPct = getVal('eco-subida-pct');
@@ -288,14 +335,14 @@ function calculateEconomic() {
     // Base de cálculo (Suma de conceptos)
     const baseCalculo = sumaConceptos;
 
-    // 1. Salario Base hasta 63 años: (Base * 15 * 62%)
-    const base63 = baseCalculo * 15 * 0.62;
+    // 1. Salario Base hasta 63 años: (Base * 15 * %Tramo1)
+    const base63 = baseCalculo * 15 * (pct63 / 100);
     
     // 2. Mensual hasta 63 años: (Anterior / 12)
     const mensual63 = base63 / 12;
 
-    // 3. Salario Base 63-65 años: (Base * 15 * 34%)
-    const base65 = baseCalculo * 15 * 0.34;
+    // 3. Salario Base 63-65 años: (Base * 15 * %Tramo2)
+    const base65 = baseCalculo * 15 * (pct65 / 100);
 
     // 4. Mensual 63-65 años: (Anterior / 12)
     const mensual65 = base65 / 12;
@@ -325,6 +372,8 @@ function saveEconomicData(e) {
         eco_subida: Number(document.getElementById('eco-subida-importe').value), // Guardamos el importe calculado
         eco_consolidacion: Number(document.getElementById('eco-consolidacion').value),
         eco_otros: Number(document.getElementById('eco-otros').value),
+        eco_pct63: Number(document.getElementById('eco-pct63').value) || 62,
+        eco_pct65: Number(document.getElementById('eco-pct65').value) || 34,
         exen_limite: Number(document.getElementById('exen-limite').value),
         exen_movistar: Number(document.getElementById('exen-movistar').value),
         exen_seguro: Number(document.getElementById('exen-seguro').value),
@@ -353,6 +402,8 @@ function loadEconomicData() {
             if(data.eco_subida_pct) document.getElementById('eco-subida-pct').value = data.eco_subida_pct;
             if(data.eco_consolidacion) document.getElementById('eco-consolidacion').value = data.eco_consolidacion;
             if(data.eco_otros) document.getElementById('eco-otros').value = data.eco_otros;
+            if(data.eco_pct63) document.getElementById('eco-pct63').value = data.eco_pct63;
+            if(data.eco_pct65) document.getElementById('eco-pct65').value = data.eco_pct65;
             if(data.exen_limite) document.getElementById('exen-limite').value = data.exen_limite;
             if(data.exen_movistar) document.getElementById('exen-movistar').value = data.exen_movistar;
             if(data.exen_seguro) document.getElementById('exen-seguro').value = data.exen_seguro;
@@ -392,9 +443,13 @@ function loadReportData() {
             
             const sumaConceptos = salario + antiguedad + subida + consolidacion + otros;
             
+            // Porcentajes dinámicos
+            const pct63 = data.eco_pct63 || 62;
+            const pct65 = data.eco_pct65 || 34;
+
             // Cálculos de bases anuales
-            const base63 = sumaConceptos * 15 * 0.62;
-            const base65 = sumaConceptos * 15 * 0.34;
+            const base63 = sumaConceptos * 15 * (pct63 / 100);
+            const base65 = sumaConceptos * 15 * (pct65 / 100);
             // Recalculamos el límite para asegurar que usa la fórmula correcta (Total Anual * 2.56)
             const limite = (sumaConceptos * 15) * 2.56;
 
@@ -407,7 +462,7 @@ function loadReportData() {
             // 3. Generar Tabla de Simulación
             const fechaInicio = document.getElementById('rep-fecha-inicio').value;
             if (fechaInicio && data.nacimiento) {
-                renderSimulationTable(data, fechaInicio, sumaConceptos, limite);
+                renderSimulationTable(data, fechaInicio, sumaConceptos, limite, pct63, pct65);
             } else {
                 console.log("Falta fecha de inicio o fecha de nacimiento para generar la tabla.");
             }
@@ -417,7 +472,7 @@ function loadReportData() {
     });
 }
 
-function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal) {
+function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal, pct63, pct65) {
     console.log(`Generando tabla. Inicio: ${fechaInicioStr}, Nacimiento: ${data.nacimiento}`);
     const container = document.getElementById('simulation-table-container');
     container.innerHTML = ''; // Limpiar tabla anterior
@@ -450,6 +505,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     let currentYear = -1;
     let acumuladoExencion = 0;
     const fmt = (num) => num.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtInt = (num) => num.toLocaleString('es-ES', { maximumFractionDigits: 0 });
 
     let rowsGenerated = 0;
     let mesesParo = 0; // Contador de meses de paro consumidos
@@ -517,7 +573,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         // Porcentaje y Base (Cambia a los 63 años)
         // Consideramos que cumple 63 en el mes de su cumpleaños
         const isUnder63 = (ageYears < 63); 
-        const pct = isUnder63 ? 62 : 34;
+        const pct = isUnder63 ? pct63 : pct65;
         
         // Objetivo Mensual (Lo que se debería cobrar en total bruto antes de especies)
         // Base Anual = sumaConceptos * 15
@@ -594,7 +650,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             <td style="text-align: right;">${fmt(seguroSalud)}</td>
             <td style="text-align: right; font-weight: bold; color: var(--secondary);">${fmt(sumaT)}</td>
             <td style="text-align: right; color: var(--text-muted);">${fmt(pendienteExencion)}</td>
-            <td style="text-align: right;">${fmt(paroMes)}</td>
+            <td style="text-align: right;">${fmtInt(paroMes)}</td>
             <td style="text-align: right; ${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
             <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
         `;

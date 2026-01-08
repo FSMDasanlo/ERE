@@ -13,6 +13,7 @@
     <!-- Vista de Login -->
     <div id="login-view" class="container login-container">
         <div class="card login-card">
+            <span id="btn-close-login" class="close-modal" title="Cerrar aplicación">&times;</span>
             <h1><i class="fas fa-lock"></i> Acceso ERE 2026</h1>
             <form id="login-form">
                 <div class="form-group">
@@ -27,6 +28,9 @@
                     <button type="submit" class="btn-save">Entrar</button>
                     <button type="button" id="btn-signup" class="btn-secondary">Crear Usuario</button>
                 </div>
+                <p style="text-align: center; margin-top: 1rem;">
+                    <a href="#" id="btn-reset-password" style="color: var(--primary); text-decoration: none; font-size: 0.9rem;">¿Olvidaste tu contraseña?</a>
+                </p>
                 <p id="login-error" class="error-msg"></p>
             </form>
         </div>
@@ -102,15 +106,15 @@
                             <input type="number" step="0.01" id="eco-salario" placeholder="0.00">
                         </div>
                         <div class="form-group">
-                            <label>Antigüedad</label>
-                            <input type="number" step="0.01" id="eco-antiguedad" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
                             <label>Subida Salarial (% y €)</label>
                             <div class="split-inputs">
                                 <input type="number" step="0.01" id="eco-subida-pct" placeholder="%">
                                 <input type="number" step="0.01" id="eco-subida-importe" placeholder="0.00 €" readonly>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Antigüedad</label>
+                            <input type="number" step="0.01" id="eco-antiguedad" placeholder="0.00">
                         </div>
                         <div class="form-group">
                             <label>Consolidación</label>
@@ -126,10 +130,18 @@
                     <div class="results-column">
                         <h3>Cálculos Estimados</h3>
                         
+                        <div class="form-group">
+                            <label>Porcentajes (% < 63 | % > 63)</label>
+                            <div class="dual-inputs">
+                                <input type="number" step="0.01" id="eco-pct63" placeholder="62" value="62">
+                                <input type="number" step="0.01" id="eco-pct65" placeholder="34" value="34">
+                            </div>
+                        </div>
+
                         <div class="result-group">
                             <label>Salario Base (hasta 63 años)</label>
                             <div class="result-value" id="res-base63">0.00 €</div>
-                            <small class="hint">Suma Conceptos x 15 x 62%</small>
+                            <small class="hint">Suma Conceptos x 15 x % Tramo 1</small>
                         </div>
 
                         <div class="result-group">
@@ -141,7 +153,7 @@
                         <div class="result-group">
                             <label>Salario Base (63-65 años)</label>
                             <div class="result-value" id="res-base65">0.00 €</div>
-                            <small class="hint">Suma Conceptos x 15 x 34%</small>
+                            <small class="hint">Suma Conceptos x 15 x % Tramo 2</small>
                         </div>
 
                         <div class="result-group">

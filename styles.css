@@ -231,6 +231,7 @@ body {
     width: 100%;
     max-width: 400px;
     padding: 3rem 2rem;
+    position: relative;
 }
 
 .auth-buttons {
@@ -273,6 +274,15 @@ body {
 .split-inputs input:last-child {
     flex: 2;
     background-color: #f9fafb; /* Gris claro para indicar readonly */
+}
+
+.dual-inputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.dual-inputs input {
+    flex: 1;
 }
 
 /* Responsive Adjustments */
@@ -390,6 +400,12 @@ body {
 }
 
 /* Simulation Table Styles */
+.sim-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem auto;
+}
+
 .year-row {
     background-color: var(--primary);
     color: white;
