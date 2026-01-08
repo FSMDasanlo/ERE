@@ -14,6 +14,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+let simulationChart = null; // Variable global para el gráfico
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Aplicación ERE26 inicializada');
     initApp();
@@ -453,6 +455,9 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     let mesesParo = 0; // Contador de meses de paro consumidos
     let annualTotal = 0;
     let grandTotal = 0;
+    
+    const chartLabels = [];
+    const chartData = [];
 
     // Bucle mes a mes hasta los 65 años
     while (currentDate < date65) {
@@ -570,6 +575,11 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         
         annualTotal += total;
         grandTotal += total;
+        
+        // Datos para el gráfico
+        const labelDate = currentDate.toLocaleString('es-ES', { month: 'short', year: '2-digit' });
+        chartLabels.push(labelDate);
+        chartData.push(total);
 
         // Renderizar Fila
         const tr = document.createElement('tr');
@@ -616,7 +626,68 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         table.appendChild(trGrandTotal);
 
         container.appendChild(table);
+        
+        // Renderizar Gráfico
+        renderChart(chartLabels, chartData);
     } else {
         container.innerHTML = '<p>No se han generado datos para el rango de fechas seleccionado.</p>';
     }
+}
+
+function renderChart(labels, data) {
+    const ctx = document.getElementById('simulationChart').getContext('2d');
+    
+    if (simulationChart) {
+        simulationChart.destroy();
+    }
+
+    simulationChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Total Neto Mensual (€)',
+                data: data,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumSignificantDigits: 3 }).format(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
 }

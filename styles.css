@@ -464,3 +464,11 @@ body {
         print-color-adjust: exact;
     }
 }
+
+/* Chart Container */
+.chart-wrapper {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    margin-bottom: 2rem;
+}
