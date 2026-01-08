@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - ERE26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <h1><i class="fas fa-user-shield"></i> Panel de Administración</h1>
+            <div class="user-info">
+                <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
+            <h2>Gestión de Usuarios</h2>
+            <p style="margin-bottom: 2rem; color: var(--text-muted);">Selecciona un usuario de la base de datos para realizar acciones.</p>
+            
+            <div class="form-group">
+                <label>Seleccionar Usuario</label>
+                <select id="admin-users-list" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
+                    <option value="">Cargando usuarios...</option>
+                </select>
+            </div>
+
+            <div id="admin-user-summary" style="margin-bottom: 1.5rem; padding: 1rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; display: none; font-size: 0.9rem;"></div>
+
+            <div style="display: flex; gap: 1rem; flex-direction: column;">
+                <button id="btn-admin-copy" class="btn-save">
+                    <i class="fas fa-copy"></i> Copiar Datos a Nuevo Usuario
+                </button>
+                <button id="btn-admin-delete" class="btn-secondary" style="color: #ef4444; border-color: #ef4444;">
+                    <i class="fas fa-trash-alt"></i> Eliminar Usuario
+                </button>
+            </div>
+            
+            <div id="admin-status" style="margin-top: 1rem; font-weight: bold; text-align: center;"></div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

@@ -26,6 +26,7 @@ function initApp() {
     const cardPersonal = document.getElementById('card-personal');
     const cardEconomic = document.getElementById('card-economic');
     const cardSimulation = document.getElementById('card-simulation');
+    const cardAdmin = document.getElementById('card-admin');
     
     // Elementos de Login y Vistas
     const loginView = document.getElementById('login-view');
@@ -53,6 +54,11 @@ function initApp() {
                 loginView.style.display = 'none';
                 appView.style.display = 'block';
                 if(userDisplay) userDisplay.textContent = user.email;
+
+                // Mostrar panel de administración si es el usuario autorizado
+                if(cardAdmin) {
+                    cardAdmin.style.display = (user.email === 'jesus.samperruiz@gmail.com') ? 'block' : 'none';
+                }
             }
             // Si estamos en la página de informe, cargaríamos datos aquí
             if (window.location.pathname.includes('informe.html')) {
@@ -63,6 +69,16 @@ function initApp() {
                 if(dateInput) {
                     // Usamos 'input' para que sea más inmediato y 'change' por compatibilidad
                     dateInput.addEventListener('input', loadReportData);
+                }
+            }
+
+            // Lógica para página de Administración
+            if (window.location.pathname.includes('admin.html')) {
+                if (user.email !== 'jesus.samperruiz@gmail.com') {
+                    alert('Acceso denegado. Solo administradores.');
+                    window.location.href = 'index.html';
+                } else {
+                    initAdminPanel();
                 }
             }
         } else {
@@ -134,6 +150,9 @@ function initApp() {
     }
     if(cardSimulation) {
         cardSimulation.addEventListener('click', () => navigateTo('simulation'));
+    }
+    if(cardAdmin) {
+        cardAdmin.addEventListener('click', () => window.location.href = 'admin.html');
     }
 
     // Manejar Botón de Imprimir
@@ -474,6 +493,110 @@ function loadReportData() {
         }
     }).catch((error) => {
         console.error("Error al cargar datos del informe:", error);
+    });
+}
+
+function initAdminPanel() {
+    const select = document.getElementById('admin-users-list');
+    const summaryDiv = document.getElementById('admin-user-summary');
+    const btnCopy = document.getElementById('btn-admin-copy');
+    const btnDelete = document.getElementById('btn-admin-delete');
+    const status = document.getElementById('admin-status');
+
+    // Función para cargar/recargar usuarios
+    const loadUsers = () => {
+        status.textContent = "Cargando...";
+        db.collection('empleados').get().then(snapshot => {
+            select.innerHTML = '<option value="">-- Selecciona un usuario --</option>';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const name = data.nombre || 'Sin Nombre';
+                const email = data.email || 'Sin Email';
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = `${email} (${name})`;
+                select.appendChild(option);
+            });
+            status.textContent = "";
+        }).catch(err => {
+            console.error(err);
+            if (err.code === 'permission-denied') {
+                status.textContent = "Fallo de Permisos: Actualiza las Reglas en Firebase Console para permitir al admin leer 'empleados'.";
+            } else {
+                status.textContent = "Error al cargar usuarios: " + err.message;
+            }
+            status.style.color = 'red';
+        });
+    };
+
+    loadUsers();
+
+    // Mostrar resumen al seleccionar usuario
+    select.addEventListener('change', () => {
+        const selectedId = select.value;
+        if (!selectedId) {
+            summaryDiv.style.display = 'none';
+            return;
+        }
+
+        db.collection('empleados').doc(selectedId).get().then(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+                summaryDiv.innerHTML = `
+                    <p style="margin: 0.25rem 0;"><strong>Nombre:</strong> ${data.nombre || '<span style="color:red">No definido</span>'}</p>
+                    <p style="margin: 0.25rem 0;"><strong>F. Nacimiento:</strong> ${data.nacimiento || '-'}</p>
+                    <p style="margin: 0.25rem 0;"><strong>Salario Bruto:</strong> ${fmt(data.eco_salario || 0)}</p>
+                `;
+                summaryDiv.style.display = 'block';
+            }
+        }).catch(err => console.error("Error al cargar detalles:", err));
+    });
+
+    // Acción Copiar
+    btnCopy.addEventListener('click', () => {
+        const selectedId = select.value;
+        if(!selectedId) return alert('Selecciona un usuario primero');
+        
+        const targetEmail = prompt("Introduce el EMAIL del usuario destino (debe existir en BBDD):");
+        if(!targetEmail) return;
+
+        // 1. Buscar el usuario destino por su email
+        db.collection('empleados').where('email', '==', targetEmail).get().then(snapshot => {
+            if(snapshot.empty) {
+                alert("No se encontró ningún usuario con ese email.");
+                return;
+            }
+            const targetId = snapshot.docs[0].id;
+
+            // 2. Leer datos del origen y copiar al destino
+            db.collection('empleados').doc(selectedId).get().then(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    data.email = targetEmail; // Aseguramos que el destino conserve su email
+                    data.nombre = (data.nombre || '') + ' (Copia)';
+                    data.fechaActualizacion = new Date();
+                    
+                    db.collection('empleados').doc(targetId).set(data).then(() => {
+                        alert('Datos copiados correctamente a ' + targetEmail);
+                        loadUsers();
+                    });
+                }
+            });
+        }).catch(err => alert("Error: " + err.message));
+    });
+
+    // Acción Eliminar
+    btnDelete.addEventListener('click', () => {
+        const selectedId = select.value;
+        if(!selectedId) return alert('Selecciona un usuario primero');
+        
+        if(confirm("¿Estás seguro de que quieres eliminar este usuario? Esta acción borrará sus datos de la base de datos.")) {
+            db.collection('empleados').doc(selectedId).delete().then(() => {
+                alert('Usuario eliminado.');
+                loadUsers();
+            }).catch(err => alert('Error al eliminar: ' + err.message));
+        }
     });
 }
 
