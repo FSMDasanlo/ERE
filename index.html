@@ -93,98 +93,112 @@
 
     <!-- Modal Datos Económicos -->
     <div id="modal-economic" class="modal">
-        <div class="modal-content modal-large">
+        <div class="modal-content modal-large compact-modal">
             <span class="close-modal" data-target="modal-economic">&times;</span>
             <h2><i class="fas fa-coins"></i> Datos Económicos</h2>
+            
+            <!-- Barra Superior de Resultados -->
+            <div class="compact-results-bar">
+                <div class="c-res-item">
+                    <label>Base Reguladora (x15)</label>
+                    <span id="res-total-bruto" class="highlight-value">0.00 €</span>
+                </div>
+                <div class="c-res-item">
+                    <label>Mensual (< 63)</label>
+                    <span id="res-mensual63">0.00 €</span>
+                </div>
+                <div class="c-res-item">
+                    <label>Mensual (> 63)</label>
+                    <span id="res-mensual65">0.00 €</span>
+                </div>
+            </div>
+
             <form id="form-economic">
-                <div class="modal-grid">
-                    <!-- Columna Izquierda: Inputs -->
-                    <div class="input-column">
-                        <h3>Conceptos Mensuales (€)</h3>
-                        <div class="form-group">
-                            <label>Salario Bruto</label>
-                            <input type="number" step="0.01" id="eco-salario" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label>Subida Salarial (% y €)</label>
-                            <div class="split-inputs">
-                                <input type="number" step="0.01" id="eco-subida-pct" placeholder="%">
-                                <input type="number" step="0.01" id="eco-subida-importe" placeholder="0.00 €" readonly>
+                <div class="compact-grid-layout">
+                    <!-- Columna 1: Ingresos -->
+                    <div class="compact-col">
+                        <h3 class="compact-title">Conceptos Salariales</h3>
+                        <div class="row-inputs">
+                            <div class="form-group compact">
+                                <label>Salario Bruto</label>
+                                <input type="number" step="0.01" id="eco-salario" placeholder="0.00">
+                            </div>
+                            <div class="form-group compact">
+                                <label>Antigüedad</label>
+                                <input type="number" step="0.01" id="eco-antiguedad" placeholder="0.00">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Antigüedad</label>
-                            <input type="number" step="0.01" id="eco-antiguedad" placeholder="0.00">
+                        <div class="row-inputs">
+                            <div class="form-group compact">
+                                <label>Subida %</label>
+                                <div class="input-with-symbol">
+                                    <input type="number" step="0.01" id="eco-subida-pct" placeholder="0">
+                                    <span class="symbol-suffix">%</span>
+                                </div>
+                            </div>
+                            <div class="form-group compact">
+                                <label>Subida €</label>
+                                <input type="number" step="0.01" id="eco-subida-importe" placeholder="0.00" readonly style="background-color: #f3f4f6;">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Consolidación</label>
-                            <input type="number" step="0.01" id="eco-consolidacion" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label>Otros</label>
-                            <input type="number" step="0.01" id="eco-otros" placeholder="0.00">
+                        <div class="row-inputs">
+                            <div class="form-group compact">
+                                <label>Consolidación</label>
+                                <input type="number" step="0.01" id="eco-consolidacion" placeholder="0.00">
+                            </div>
+                            <div class="form-group compact">
+                                <label>Otros</label>
+                                <input type="number" step="0.01" id="eco-otros" placeholder="0.00">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Columna Derecha: Resultados -->
-                    <div class="results-column">
-                        <h3>Cálculos Estimados</h3>
-                        
-                        <div class="form-group">
-                            <label>Porcentajes (% < 63 | % > 63)</label>
+                    <!-- Columna 2: Configuración y Especie -->
+                    <div class="compact-col">
+                        <h3 class="compact-title">Parámetros y Especie</h3>
+                        <div class="form-group compact">
+                            <label>Porcentajes ERE (< 63 | > 63)</label>
                             <div class="dual-inputs">
-                                <input type="number" step="0.01" id="eco-pct63" placeholder="62" value="62">
-                                <input type="number" step="0.01" id="eco-pct65" placeholder="34" value="34">
+                                <div class="input-with-symbol">
+                                    <input type="number" step="0.01" id="eco-pct63" placeholder="62" value="62">
+                                    <span class="symbol-suffix">%</span>
+                                </div>
+                                <div class="input-with-symbol">
+                                    <input type="number" step="0.01" id="eco-pct65" placeholder="34" value="34">
+                                    <span class="symbol-suffix">%</span>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="result-group">
-                            <label>Salario Base (hasta 63 años)</label>
-                            <div class="result-value" id="res-base63">0.00 €</div>
-                            <small class="hint">Suma Conceptos x 15 x % Tramo 1</small>
+                        
+                        <div class="row-inputs">
+                            <div class="form-group compact">
+                                <label>Movistar</label>
+                                <input type="number" step="0.01" id="exen-movistar" placeholder="0.00">
+                            </div>
+                            <div class="form-group compact">
+                                <label>Seguro Salud</label>
+                                <input type="number" step="0.01" id="exen-seguro" placeholder="0.00">
+                            </div>
                         </div>
-
-                        <div class="result-group">
-                            <label>Mensual (hasta 63 años)</label>
-                            <div class="result-value highlight" id="res-mensual63">0.00 €</div>
-                            <small class="hint">Anterior / 12</small>
-                        </div>
-
-                        <div class="result-group">
-                            <label>Salario Base (63-65 años)</label>
-                            <div class="result-value" id="res-base65">0.00 €</div>
-                            <small class="hint">Suma Conceptos x 15 x % Tramo 2</small>
-                        </div>
-
-                        <div class="result-group">
-                            <label>Mensual (63-65 años)</label>
-                            <div class="result-value highlight" id="res-mensual65">0.00 €</div>
-                            <small class="hint">Anterior / 12</small>
+                        <div class="row-inputs">
+                            <div class="form-group compact">
+                                <label>Seguro Vida</label>
+                                <input type="number" step="0.01" id="exen-vida" placeholder="0.00">
+                            </div>
+                            <div class="form-group compact" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <label style="color: var(--secondary); font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: help;" title="Cálculo: Base Reguladora Anual (x15) * 2.56">
+                                    Límite Exento <i class="fas fa-info-circle"></i>
+                                </label>
+                                <input type="text" id="exen-limite" placeholder="0,00 €" readonly style="background-color: transparent; border: none; text-align: center; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark); width: 100%; padding: 0.25rem 0;">
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Caja de Desglose de Exenciones -->
-                <div class="exemption-box">
-                    <h3><i class="fas fa-hand-holding-usd"></i> Desglose Exención IRPF (Mensual)</h3>
-                    <div class="exemption-grid">
-                        <div class="form-group">
-                            <label>Límite Global</label>
-                            <input type="number" step="0.01" id="exen-limite" placeholder="0.00" readonly style="background-color: #f9fafb;">
-                        </div>
-                        <div class="form-group">
-                            <label>Movistar</label>
-                            <input type="number" step="0.01" id="exen-movistar" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label>Seguro Médico</label>
-                            <input type="number" step="0.01" id="exen-seguro" placeholder="0.00">
-                        </div>
-                        <div class="form-group">
-                            <label>Seguro de Vida</label>
-                            <input type="number" step="0.01" id="exen-vida" placeholder="0.00">
-                        </div>
-                    </div>
+                <!-- Elementos ocultos para cálculos intermedios que requiere JS -->
+                <div style="display:none;">
+                    <span id="res-base63"></span>
+                    <span id="res-base65"></span>
                 </div>
 
                 <button type="submit" class="btn-save" style="margin-top: 1rem;">Guardar Datos Económicos</button>

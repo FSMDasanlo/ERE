@@ -51,25 +51,21 @@
                     <label>Fecha Inicio Simulación</label>
                     <input type="date" id="rep-fecha-inicio" class="summary-input">
                 </div>
+                <div class="summary-item summary-actions">
+                    <button id="btn-print" class="btn-secondary" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        <i class="fas fa-print"></i> Imprimir PDF
+                    </button>
+                </div>
             </div>
 
             <!-- Contenedor para el contenido dinámico que definiremos a continuación -->
             <div id="report-content">
-                <div class="chart-wrapper">
-                    <canvas id="simulationChart"></canvas>
-                </div>
                 <div id="simulation-table-container"></div>
             </div>
         </div>
     </main>
 
-    <!-- Botón Flotante de Imprimir -->
-    <button id="btn-print" class="fab-print" title="Imprimir Informe">
-        <i class="fas fa-print"></i>
-    </button>
-
     <!-- Scripts de Firebase y de la aplicación -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>

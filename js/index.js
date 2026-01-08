@@ -14,7 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-let simulationChart = null; // Variable global para el gráfico
+let initialEconomicData = null; // Estado inicial del formulario económico
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Aplicación ERE26 inicializada');
@@ -102,15 +102,15 @@ function initApp() {
     // Cerrar modales con la X (Genérico para todos los modales)
     closeButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Buscamos el modal padre más cercano o usamos el ID si lo tuviéramos
-            e.target.closest('.modal').style.display = 'none';
+            const modal = e.target.closest('.modal');
+            attemptCloseModal(modal);
         });
     });
 
     // Cerrar modal clicando fuera
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
+            attemptCloseModal(e.target);
         }
     });
 
@@ -350,6 +350,7 @@ function calculateEconomic() {
     // Mostrar resultados formateados en Euros
     const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
+    document.getElementById('res-total-bruto').textContent = fmt(sumaConceptos * 15);
     document.getElementById('res-base63').textContent = fmt(base63);
     document.getElementById('res-mensual63').textContent = fmt(mensual63);
     document.getElementById('res-base65').textContent = fmt(base65);
@@ -357,11 +358,13 @@ function calculateEconomic() {
 
     // Cálculo del Límite Global (Base Anual Total * 2.56)
     const limiteGlobal = (baseCalculo * 15) * 2.56;
-    document.getElementById('exen-limite').value = limiteGlobal.toFixed(2);
+    const inputLimite = document.getElementById('exen-limite');
+    inputLimite.value = fmt(limiteGlobal);
+    inputLimite.dataset.value = limiteGlobal; // Guardamos el valor numérico para guardarlo después
 }
 
 function saveEconomicData(e) {
-    e.preventDefault();
+    if(e) e.preventDefault();
     const user = auth.currentUser;
     if (!user) return;
 
@@ -374,7 +377,7 @@ function saveEconomicData(e) {
         eco_otros: Number(document.getElementById('eco-otros').value),
         eco_pct63: Number(document.getElementById('eco-pct63').value) || 62,
         eco_pct65: Number(document.getElementById('eco-pct65').value) || 34,
-        exen_limite: Number(document.getElementById('exen-limite').value),
+        exen_limite: Number(document.getElementById('exen-limite').dataset.value) || 0,
         exen_movistar: Number(document.getElementById('exen-movistar').value),
         exen_seguro: Number(document.getElementById('exen-seguro').value),
         exen_vida: Number(document.getElementById('exen-vida').value),
@@ -384,6 +387,7 @@ function saveEconomicData(e) {
     db.collection('empleados').doc(user.uid).set(data, { merge: true })
         .then(() => {
             alert('¡Datos económicos guardados!');
+            initialEconomicData = getEconomicState(); // Actualizamos el estado inicial tras guardar
             document.getElementById('modal-economic').style.display = 'none';
         })
         .catch(err => console.error(err));
@@ -409,9 +413,10 @@ function loadEconomicData() {
             if(data.exen_seguro) document.getElementById('exen-seguro').value = data.exen_seguro;
             if(data.exen_vida) document.getElementById('exen-vida').value = data.exen_vida;
             
-            // Recalcular con los datos cargados
-            calculateEconomic();
         }
+        // Recalcular y guardar estado inicial (tanto si existen datos como si no)
+        calculateEconomic();
+        initialEconomicData = getEconomicState();
     }).catch((error) => {
         console.log("Error al cargar datos:", error);
     });
@@ -511,9 +516,6 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     let mesesParo = 0; // Contador de meses de paro consumidos
     let annualTotal = 0;
     let grandTotal = 0;
-    
-    const chartLabels = [];
-    const chartData = [];
 
     // Bucle mes a mes hasta los 65 años
     while (currentDate < date65) {
@@ -527,8 +529,9 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 const trSubtotal = document.createElement('tr');
                 trSubtotal.style.backgroundColor = '#f8fafc';
                 trSubtotal.innerHTML = `
-                    <td colspan="11" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+                    <td colspan="6" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
                     <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
+                    <td colspan="5"></td>
                 `;
                 table.appendChild(trSubtotal);
                 annualTotal = 0;
@@ -548,14 +551,14 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 <th>Edad</th>
                 <th style="text-align: right;">%</th>
                 <th style="text-align: right;">Imp. Empresa</th>
+                <th style="text-align: right;">Paro</th>
+                <th style="text-align: right;">IRPF</th>
+                <th style="text-align: right;">Total</th>
                 <th style="text-align: right;">Movistar</th>
                 <th style="text-align: right;">Seg. Vida</th>
                 <th style="text-align: right;">Seg. Salud</th>
                 <th style="text-align: right;">Suma T</th>
                 <th style="text-align: right;">Pend. Exen.</th>
-                <th style="text-align: right;">Paro</th>
-                <th style="text-align: right;">IRPF</th>
-                <th style="text-align: right;">Total</th>
             `;
             table.appendChild(trHeader);
         }
@@ -631,11 +634,6 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         
         annualTotal += total;
         grandTotal += total;
-        
-        // Datos para el gráfico
-        const labelDate = currentDate.toLocaleString('es-ES', { month: 'short', year: '2-digit' });
-        chartLabels.push(labelDate);
-        chartData.push(total);
 
         // Renderizar Fila
         const tr = document.createElement('tr');
@@ -645,14 +643,14 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             <td>${edadTexto}</td>
             <td style="text-align: right;">${pct}%</td>
             <td style="text-align: right;">${fmt(importeEmpresa)}</td>
+            <td style="text-align: right;">${fmtInt(paroMes)}</td>
+            <td style="text-align: right; ${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
+            <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
             <td style="text-align: right;">${fmt(movistar)}</td>
             <td style="text-align: right;">${fmt(seguroVida)}</td>
             <td style="text-align: right;">${fmt(seguroSalud)}</td>
             <td style="text-align: right; font-weight: bold; color: var(--secondary);">${fmt(sumaT)}</td>
             <td style="text-align: right; color: var(--text-muted);">${fmt(pendienteExencion)}</td>
-            <td style="text-align: right;">${fmtInt(paroMes)}</td>
-            <td style="text-align: right; ${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
-            <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
         `;
         table.appendChild(tr);
 
@@ -666,8 +664,9 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         const trSubtotal = document.createElement('tr');
         trSubtotal.style.backgroundColor = '#f8fafc';
         trSubtotal.innerHTML = `
-            <td colspan="11" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+            <td colspan="6" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
             <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
+            <td colspan="5"></td>
         `;
         table.appendChild(trSubtotal);
 
@@ -676,74 +675,47 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         trGrandTotal.style.backgroundColor = '#e0e7ff';
         trGrandTotal.style.borderTop = '2px solid var(--primary)';
         trGrandTotal.innerHTML = `
-            <td colspan="11" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
+            <td colspan="6" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
             <td style="text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark);">${fmt(grandTotal)}</td>
+            <td colspan="5"></td>
         `;
         table.appendChild(trGrandTotal);
 
         container.appendChild(table);
-        
-        // Renderizar Gráfico
-        renderChart(chartLabels, chartData);
     } else {
         container.innerHTML = '<p>No se han generado datos para el rango de fechas seleccionado.</p>';
     }
 }
 
-function renderChart(labels, data) {
-    const ctx = document.getElementById('simulationChart').getContext('2d');
-    
-    if (simulationChart) {
-        simulationChart.destroy();
-    }
-
-    simulationChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Total Neto Mensual (€)',
-                data: data,
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                borderWidth: 2,
-                tension: 0.3,
-                fill: true,
-                pointRadius: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
-                            }
-                            return label;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumSignificantDigits: 3 }).format(value);
-                        }
-                    }
-                }
-            }
-        }
+// Funciones auxiliares para control de cambios
+function getEconomicState() {
+    const ids = [
+        'eco-salario', 'eco-antiguedad', 'eco-subida-pct',
+        'eco-consolidacion', 'eco-otros', 'eco-pct63', 'eco-pct65',
+        'exen-movistar', 'exen-seguro', 'exen-vida'
+    ];
+    const data = {};
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) data[id] = el.value;
     });
+    return JSON.stringify(data);
+}
+
+function attemptCloseModal(modal) {
+    if (modal.id === 'modal-economic') {
+        const currentState = getEconomicState();
+        // Verificar si hay cambios respecto al estado inicial
+        if (initialEconomicData && currentState !== initialEconomicData) {
+            if (confirm("Tienes cambios sin guardar. ¿Quieres guardarlos antes de salir?")) {
+                saveEconomicData(); 
+            } else {
+                modal.style.display = 'none'; // Cerrar sin guardar
+            }
+        } else {
+            modal.style.display = 'none';
+        }
+    } else {
+        modal.style.display = 'none';
+    }
 }
