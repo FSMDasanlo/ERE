@@ -600,6 +600,48 @@ function initAdminPanel() {
     });
 }
 
+function calculateProgressiveIrpf(annualTaxableAmount) {
+    if (annualTaxableAmount <= 0) return 0;
+
+    let tax = 0;
+    let amount = annualTaxableAmount;
+
+    // Tramo 1: hasta 12.450€ al 19%
+    if (amount > 0) {
+        const taxableInBracket = Math.min(amount, 12450);
+        tax += taxableInBracket * 0.19;
+        amount -= taxableInBracket;
+    }
+
+    // Tramo 2: de 12.450€ a 20.200€ al 24%
+    if (amount > 0) {
+        const taxableInBracket = Math.min(amount, 20200 - 12450);
+        tax += taxableInBracket * 0.24;
+        amount -= taxableInBracket;
+    }
+
+    // Tramo 3: de 20.200€ a 35.200€ al 30%
+    if (amount > 0) {
+        const taxableInBracket = Math.min(amount, 35200 - 20200);
+        tax += taxableInBracket * 0.30;
+        amount -= taxableInBracket;
+    }
+
+    // Tramo 4: de 35.200€ a 60.000€ al 37%
+    if (amount > 0) {
+        const taxableInBracket = Math.min(amount, 60000 - 35200);
+        tax += taxableInBracket * 0.37;
+        amount -= taxableInBracket;
+    }
+
+    // Tramo 5: más de 60.000€ al 45%
+    if (amount > 0) {
+        tax += amount * 0.45;
+    }
+
+    return tax;
+}
+
 function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal, pct63, pct65) {
     console.log(`Generando tabla. Inicio: ${fechaInicioStr}, Nacimiento: ${data.nacimiento}`);
     const container = document.getElementById('simulation-table-container');
@@ -640,6 +682,10 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     let annualTotal = 0;
     let grandTotal = 0;
 
+    // Variables para cálculo de IRPF anual progresivo
+    let annualTaxableIncome = 0;
+    let annualIrpfPaid = 0;
+
     // Bucle mes a mes hasta los 65 años
     while (currentDate < date65) {
         const year = currentDate.getFullYear();
@@ -659,6 +705,10 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 table.appendChild(trSubtotal);
                 annualTotal = 0;
             }
+            // Reset contadores anuales
+            annualTaxableIncome = 0;
+            annualIrpfPaid = 0;
+
             currentYear = year;
             
             // Fila AÑO
@@ -724,29 +774,32 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         const sumaT = consumoMensual; // Alias para la columna "Suma T"
         
         let irpf = 0;
+        let monthlyTaxableAmount = 0;
         
         // Lógica de Exención
         if (acumuladoExencion < limiteGlobal) {
             // Aún tenemos "saldo" de exención
             if ((acumuladoExencion + consumoMensual) <= limiteGlobal) {
                 // Todo el mes es exento
-                irpf = 0;
+                monthlyTaxableAmount = 0;
                 acumuladoExencion += consumoMensual;
             } else {
                 // Se agota el límite a mitad de este mes
                 const parteExenta = limiteGlobal - acumuladoExencion;
-                const parteGravada = consumoMensual - parteExenta;
+                monthlyTaxableAmount = consumoMensual - parteExenta;
                 acumuladoExencion = limiteGlobal; // Límite alcanzado
-                
-                // Aplicamos una retención estimada a la parte gravada (ej. 19% base)
-                // Nota: Esto es una estimación, ya que no tenemos tipo impositivo del usuario
-                irpf = parteGravada * 0.19; 
             }
         } else {
             // Límite ya agotado, todo tributa
-            irpf = consumoMensual * 0.19;
+            monthlyTaxableAmount = consumoMensual;
         }
 
+        if (monthlyTaxableAmount > 0) {
+            annualTaxableIncome += monthlyTaxableAmount;
+            const totalIrpfDue = calculateProgressiveIrpf(annualTaxableIncome);
+            irpf = totalIrpfDue - annualIrpfPaid;
+            annualIrpfPaid += irpf;
+        }
         // Pendiente de Exención (Lo que queda de la bolsa)
         const pendienteExencion = Math.max(0, limiteGlobal - acumuladoExencion);
 
