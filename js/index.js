@@ -702,6 +702,14 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     let mesesParo = 0; // Contador de meses de paro consumidos
     let annualTotal = 0;
     let grandTotal = 0;
+    let annualRentaTel = 0;
+    let grandRentaTel = 0;
+    let annualSepe = 0;
+    let grandSepe = 0;
+    let annualSS = 0;
+    let grandSS = 0;
+    let annualSumaT = 0;
+    let grandSumaT = 0;
 
     // Variables para cálculo de IRPF anual progresivo
     let annualTaxableIncome = 0;
@@ -719,12 +727,22 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 const trSubtotal = document.createElement('tr');
                 trSubtotal.style.backgroundColor = '#f8fafc';
                 trSubtotal.innerHTML = `
-                    <td colspan="7" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+                    <td colspan="3" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+                    <td style="text-align: right; font-weight: bold;">${fmt(annualRentaTel)}</td>
+                    <td style="text-align: right; font-weight: bold;">${fmt(annualSepe)}</td>
+                    <td></td>
+                    <td style="text-align: right; font-weight: bold; color: #ef4444;">${fmt(annualSS)}</td>
                     <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
-                    <td colspan="5"></td>
+                    <td colspan="3"></td>
+                    <td style="text-align: right; font-weight: bold; color: var(--secondary);">${fmt(annualSumaT)}</td>
+                    <td></td>
                 `;
                 table.appendChild(trSubtotal);
                 annualTotal = 0;
+                annualRentaTel = 0;
+                annualSepe = 0;
+                annualSS = 0;
+                annualSumaT = 0;
             }
             // Reset contadores anuales
             annualTaxableIncome = 0;
@@ -748,7 +766,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 <th style="text-align: right;">SEPE</th>
                 <th style="text-align: right;">IRPF</th>
                 <th style="text-align: right;">SS</th>
-                <th style="text-align: right; cursor: help;" title="Renta TEL + SEPE">Total <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
+                <th style="text-align: right; cursor: help;" title="Renta Tel. + SEPE + SS">Total <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
                 <th style="text-align: right;">Bon. Empl.</th>
                 <th style="text-align: right;">Seg. Vida</th>
                 <th style="text-align: right;">Seg. Salud</th>
@@ -833,10 +851,19 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         // Total Neto (Cash Flow)
         // Asumimos: Total = (Importe Empresa + Paro) - IRPF
         // (Movistar y Seguros no se suman al neto porque suelen ser pago directo de la empresa)
-        const total = (rentaTel + paroMes) - irpf;
+        const total = (rentaTel + paroMes + currentSS) - irpf;
         
         annualTotal += total;
         grandTotal += total;
+        
+        annualRentaTel += rentaTel;
+        grandRentaTel += rentaTel;
+        annualSepe += paroMes;
+        grandSepe += paroMes;
+        annualSS += currentSS;
+        grandSS += currentSS;
+        annualSumaT += sumaT;
+        grandSumaT += sumaT;
 
         // Renderizar Fila
         const tr = document.createElement('tr');
@@ -868,24 +895,57 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         const trSubtotal = document.createElement('tr');
         trSubtotal.style.backgroundColor = '#f8fafc';
         trSubtotal.innerHTML = `
-            <td colspan="7" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+            <td colspan="3" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+            <td style="text-align: right; font-weight: bold;">${fmt(annualRentaTel)}</td>
+            <td style="text-align: right; font-weight: bold;">${fmt(annualSepe)}</td>
+            <td></td>
+            <td style="text-align: right; font-weight: bold; color: #ef4444;">${fmt(annualSS)}</td>
             <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
-            <td colspan="5"></td>
+            <td colspan="3"></td>
+            <td style="text-align: right; font-weight: bold; color: var(--secondary);">${fmt(annualSumaT)}</td>
+            <td></td>
         `;
         table.appendChild(trSubtotal);
 
-        // Gran Total Acumulado
-        const trGrandTotal = document.createElement('tr');
-        trGrandTotal.style.backgroundColor = '#e0e7ff';
-        trGrandTotal.style.borderTop = '2px solid var(--primary)';
-        trGrandTotal.innerHTML = `
-            <td colspan="7" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
-            <td style="text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark);">${fmt(grandTotal)}</td>
-            <td colspan="5"></td>
-        `;
-        table.appendChild(trGrandTotal);
-
         container.appendChild(table);
+
+        // Caja de Resumen Acumulado
+        const summaryBox = document.createElement('div');
+        summaryBox.className = 'card';
+        summaryBox.style.marginTop = '2rem';
+        summaryBox.style.backgroundColor = '#f0f9ff';
+        summaryBox.style.border = '1px solid #bae6fd';
+        summaryBox.style.padding = '1.5rem';
+        summaryBox.style.textAlign = 'left';
+
+        summaryBox.innerHTML = `
+            <h3 style="color: #0369a1; margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid #bae6fd; padding-bottom: 0.5rem;">
+                <i class="fas fa-chart-line"></i> Resumen Total Acumulado
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1.5rem;">
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">Renta TEL</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #334155;">${fmt(grandRentaTel)}</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">SEPE</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #334155;">${fmt(grandSepe)}</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">SS</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #ef4444;">${fmt(grandSS)}</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 3px solid var(--primary);">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">TOTAL NETO</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">${fmt(grandTotal)}</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">SUMA T</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: var(--secondary);">${fmt(grandSumaT)}</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(summaryBox);
     } else {
         container.innerHTML = '<p>No se han generado datos para el rango de fechas seleccionado.</p>';
     }
