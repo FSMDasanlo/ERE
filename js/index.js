@@ -749,10 +749,10 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 <th style="text-align: right;">IRPF</th>
                 <th style="text-align: right;">SS</th>
                 <th style="text-align: right; cursor: help;" title="Renta TEL + SEPE">Total <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
-                <th style="text-align: right;">Movistar</th>
+                <th style="text-align: right;">Bon. Empl.</th>
                 <th style="text-align: right;">Seg. Vida</th>
                 <th style="text-align: right;">Seg. Salud</th>
-                <th style="text-align: right; cursor: help;" title="Renta TEL + Movistar + SEG. VIDA + SEG. SALUD">Suma T <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
+                <th style="text-align: right; cursor: help;" title="Renta TEL + Bon. Empl. + SEG. VIDA + SEG. SALUD">Suma T <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
                 <th style="text-align: right;">Pend. Exen.</th>
             `;
             table.appendChild(trHeader);
