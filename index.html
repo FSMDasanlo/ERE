@@ -58,7 +58,7 @@
         <div class="card" id="card-economic">
             <div class="icon-wrapper"><i class="fas fa-coins"></i></div>
             <h2>Datos Económicos</h2>
-            <p>Consulta tu indemnización, paro y complementos.</p>
+            <p>Consulta tu indemnización, SEPE y complementos.</p>
         </div>
 
         <div class="card" id="card-simulation">
@@ -106,7 +106,7 @@
             <!-- Barra Superior de Resultados -->
             <div class="compact-results-bar">
                 <div class="c-res-item">
-                    <label>Base Reguladora ANUAL</label>
+                    <label>Salario ANUAL</label>
                     <span id="res-total-bruto" class="highlight-value">0.00 €</span>
                 </div>
                 <div class="c-res-item">
@@ -157,6 +157,25 @@
                                 <input type="number" step="0.01" id="eco-otros" placeholder="0.00">
                             </div>
                         </div>
+
+                        <!-- Nueva Caja SEPE -->
+                        <div class="form-group compact" style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 0.5rem; padding: 0.5rem; margin-top: 0.5rem;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #9a3412; font-weight: 600;">SEPE</h4>
+                            <div class="row-inputs" style="margin-bottom: 0;">
+                                <div class="form-group compact" style="margin-bottom: 0;">
+                                    <label>Imp. SEPE</label>
+                                    <input type="number" step="0.01" id="eco-sepe-importe" placeholder="1225.00">
+                                </div>
+                                <div class="form-group compact" style="margin-bottom: 0;">
+                                    <label>Imp. SS</label>
+                                    <input type="number" step="0.01" id="eco-sepe-ss" placeholder="0.00">
+                                </div>
+                                <div class="form-group compact" style="margin-bottom: 0;">
+                                    <label>Neto-SEPE</label>
+                                    <input type="number" step="0.01" id="eco-sepe-neto" placeholder="0.00" readonly style="background-color: rgba(255,255,255,0.6); font-weight: bold;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Columna 2: Configuración y Especie -->
@@ -196,11 +215,19 @@
                                 <label>Seguro Vida</label>
                                 <input type="number" step="0.01" id="exen-vida" placeholder="0.00">
                             </div>
-                            <div class="form-group compact" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                                <label style="color: var(--secondary); font-weight: 600; display: flex; justify-content: space-between; align-items: center; cursor: help;" title="Cálculo: Base Reguladora Anual * 2.56">
-                                    Límite Exento <i class="fas fa-info-circle"></i>
-                                </label>
-                                <input type="text" id="exen-limite" placeholder="0,00 €" readonly style="background-color: transparent; border: none; text-align: center; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark); width: 100%; padding: 0.25rem 0;">
+                        </div>
+
+                        <div class="form-group compact" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-top: 0.5rem;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--primary-dark); font-weight: 600;">IMPORTE EXENCION</h4>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.8rem;">Factor</label>
+                                    <input type="number" step="0.01" id="exen-factor" value="2.56" placeholder="2.56" style="text-align: center;">
+                                </div>
+                                <div style="flex: 2;">
+                                    <label style="color: var(--secondary); font-weight: 600; font-size: 0.8rem;">Límite Exento</label>
+                                    <input type="text" id="exen-limite" placeholder="0,00 €" readonly style="background-color: transparent; border: none; text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark); width: 100%; padding: 0.25rem 0;">
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -62,14 +62,15 @@ function initApp() {
             }
             // Si estamos en la página de informe, cargaríamos datos aquí
             if (window.location.pathname.includes('informe.html')) {
-                loadReportData();
-                
                 // Listener para regenerar tabla al cambiar fecha
                 const dateInput = document.getElementById('rep-fecha-inicio');
                 if(dateInput) {
+                    // Establecer fecha por defecto: 1 de marzo de 2026
+                    if(!dateInput.value) dateInput.value = '2026-03-01';
                     // Usamos 'input' para que sea más inmediato y 'change' por compatibilidad
                     dateInput.addEventListener('input', loadReportData);
                 }
+                loadReportData();
             }
 
             // Lógica para página de Administración
@@ -339,6 +340,12 @@ function calculateEconomic() {
     // Obtener porcentajes configurados (o valores por defecto)
     const pct63 = getVal('eco-pct63') || 62;
     const pct65 = getVal('eco-pct65') || 34;
+    const factor = getVal('exen-factor') || 2.56;
+
+    // Cálculo Neto SEPE
+    const sepeImporte = getVal('eco-sepe-importe');
+    const sepeSS = getVal('eco-sepe-ss');
+    document.getElementById('eco-sepe-neto').value = (sepeImporte - sepeSS).toFixed(2);
     
     // Cálculo de Subida Salarial (Porcentaje sobre Salario Bruto)
     const subidaPct = getVal('eco-subida-pct');
@@ -375,8 +382,8 @@ function calculateEconomic() {
     document.getElementById('res-base65').textContent = fmt(base65);
     document.getElementById('res-mensual65').textContent = fmt(mensual65);
 
-    // Cálculo del Límite Global (Base Anual Total * 2.56)
-    const limiteGlobal = (baseCalculo * 15) * 2.56;
+    // Cálculo del Límite Global (Base Anual Total * Factor)
+    const limiteGlobal = (baseCalculo * 15) * factor;
     const inputLimite = document.getElementById('exen-limite');
     inputLimite.value = fmt(limiteGlobal);
     inputLimite.dataset.value = limiteGlobal; // Guardamos el valor numérico para guardarlo después
@@ -396,7 +403,10 @@ function saveEconomicData(e) {
         eco_otros: Number(document.getElementById('eco-otros').value),
         eco_pct63: Number(document.getElementById('eco-pct63').value) || 62,
         eco_pct65: Number(document.getElementById('eco-pct65').value) || 34,
+        eco_sepe_importe: Number(document.getElementById('eco-sepe-importe').value),
+        eco_sepe_ss: Number(document.getElementById('eco-sepe-ss').value),
         exen_limite: Number(document.getElementById('exen-limite').dataset.value) || 0,
+        exen_factor: Number(document.getElementById('exen-factor').value) || 2.56,
         exen_movistar: Number(document.getElementById('exen-movistar').value),
         exen_seguro: Number(document.getElementById('exen-seguro').value),
         exen_vida: Number(document.getElementById('exen-vida').value),
@@ -428,9 +438,12 @@ function loadEconomicData() {
             if(data.eco_pct63) document.getElementById('eco-pct63').value = data.eco_pct63;
             if(data.eco_pct65) document.getElementById('eco-pct65').value = data.eco_pct65;
             if(data.exen_limite) document.getElementById('exen-limite').value = data.exen_limite;
+            if(data.exen_factor) document.getElementById('exen-factor').value = data.exen_factor;
             if(data.exen_movistar) document.getElementById('exen-movistar').value = data.exen_movistar;
             if(data.exen_seguro) document.getElementById('exen-seguro').value = data.exen_seguro;
             if(data.exen_vida) document.getElementById('exen-vida').value = data.exen_vida;
+            if(data.eco_sepe_importe) document.getElementById('eco-sepe-importe').value = data.eco_sepe_importe;
+            if(data.eco_sepe_ss) document.getElementById('eco-sepe-ss').value = data.eco_sepe_ss;
             
         }
         // Recalcular y guardar estado inicial (tanto si existen datos como si no)
@@ -470,12 +483,18 @@ function loadReportData() {
             // Porcentajes dinámicos
             const pct63 = data.eco_pct63 || 62;
             const pct65 = data.eco_pct65 || 34;
+            const factor = data.exen_factor || 2.56;
+            
+            // Cálculo del Neto SEPE para el informe
+            const sepeImporte = data.eco_sepe_importe;
+            const sepeSS = data.eco_sepe_ss || 0;
+            const sepeNeto = (sepeImporte !== undefined) ? (sepeImporte - sepeSS) : undefined;
 
             // Cálculos de bases anuales
             const base63 = sumaConceptos * 15 * (pct63 / 100);
             const base65 = sumaConceptos * 15 * (pct65 / 100);
-            // Recalculamos el límite para asegurar que usa la fórmula correcta (Total Anual * 2.56)
-            const limite = (sumaConceptos * 15) * 2.56;
+            // Recalculamos el límite para asegurar que usa la fórmula correcta (Total Anual * Factor)
+            const limite = (sumaConceptos * 15) * factor;
 
             const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
@@ -486,7 +505,7 @@ function loadReportData() {
             // 3. Generar Tabla de Simulación
             const fechaInicio = document.getElementById('rep-fecha-inicio').value;
             if (fechaInicio && data.nacimiento) {
-                renderSimulationTable(data, fechaInicio, sumaConceptos, limite, pct63, pct65);
+                renderSimulationTable(data, fechaInicio, sumaConceptos, limite, pct63, pct65, sepeNeto);
             } else {
                 console.log("Falta fecha de inicio o fecha de nacimiento para generar la tabla.");
             }
@@ -642,7 +661,7 @@ function calculateProgressiveIrpf(annualTaxableAmount) {
     return tax;
 }
 
-function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal, pct63, pct65) {
+function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal, pct63, pct65, sepeNeto) {
     console.log(`Generando tabla. Inicio: ${fechaInicioStr}, Nacimiento: ${data.nacimiento}`);
     const container = document.getElementById('simulation-table-container');
     container.innerHTML = ''; // Limpiar tabla anterior
@@ -669,7 +688,9 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
     const movistar = data.exen_movistar || 0;
     const seguroVida = data.exen_vida || 0;
     const seguroSalud = data.exen_seguro || 0;
-    const paroBase = 1225;
+    // Si sepeNeto está definido (incluso si es 0), lo usamos. Si no (datos antiguos), usamos 1225.
+    const paroBase = (sepeNeto !== undefined && sepeNeto !== null) ? Number(sepeNeto) : 1225;
+    const ssAmount = data.eco_sepe_ss ? Number(data.eco_sepe_ss) : 0; // Importe SS
 
     // Variables de control
     let currentYear = -1;
@@ -698,7 +719,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 const trSubtotal = document.createElement('tr');
                 trSubtotal.style.backgroundColor = '#f8fafc';
                 trSubtotal.innerHTML = `
-                    <td colspan="6" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+                    <td colspan="7" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
                     <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
                     <td colspan="5"></td>
                 `;
@@ -713,7 +734,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             
             // Fila AÑO
             const trYear = document.createElement('tr');
-            trYear.innerHTML = `<td colspan="12" class="year-row">${year}</td>`;
+            trYear.innerHTML = `<td colspan="13" class="year-row">${year}</td>`;
             table.appendChild(trYear);
 
             // Fila Cabeceras
@@ -723,14 +744,15 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
                 <th>Mes</th>
                 <th>Edad</th>
                 <th style="text-align: right;">%</th>
-                <th style="text-align: right;">Imp. Empresa</th>
-                <th style="text-align: right;">Paro</th>
+                <th style="text-align: right; cursor: help;" title="(Base Salario / 12) - SEPE">Renta TEL <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
+                <th style="text-align: right;">SEPE</th>
                 <th style="text-align: right;">IRPF</th>
-                <th style="text-align: right;">Total</th>
+                <th style="text-align: right;">SS</th>
+                <th style="text-align: right; cursor: help;" title="Renta TEL + SEPE">Total <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
                 <th style="text-align: right;">Movistar</th>
                 <th style="text-align: right;">Seg. Vida</th>
                 <th style="text-align: right;">Seg. Salud</th>
-                <th style="text-align: right;">Suma T</th>
+                <th style="text-align: right; cursor: help;" title="Renta TEL + Movistar + SEG. VIDA + SEG. SALUD">Suma T <i class="fas fa-info-circle" style="font-size: 0.8em; color: var(--secondary);"></i></th>
                 <th style="text-align: right;">Pend. Exen.</th>
             `;
             table.appendChild(trHeader);
@@ -758,8 +780,10 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
 
         // Lógica de Paro (Máximo 24 meses)
         let paroMes = 0;
+        let currentSS = 0;
         if (mesesParo < 24) {
             paroMes = paroBase;
+            currentSS = ssAmount;
             mesesParo++;
         }
 
@@ -767,10 +791,13 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         // Si se acaba el paro, la empresa paga todo el objetivo
         const importeEmpresa = Math.max(0, objetivoMensual - paroMes);
 
+        // Renta TEL: Restamos la SS
+        const rentaTel = importeEmpresa - currentSS;
+
         // Cálculo IRPF y Exención
         // Consumo mensual del límite = Lo que paga la empresa (Cash + Especie)
         // Asumimos que Movistar y Seguros son retribución en especie que consume límite
-        const consumoMensual = importeEmpresa + movistar + seguroVida + seguroSalud;
+        const consumoMensual = rentaTel + movistar + seguroVida + seguroSalud;
         const sumaT = consumoMensual; // Alias para la columna "Suma T"
         
         let irpf = 0;
@@ -806,7 +833,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         // Total Neto (Cash Flow)
         // Asumimos: Total = (Importe Empresa + Paro) - IRPF
         // (Movistar y Seguros no se suman al neto porque suelen ser pago directo de la empresa)
-        const total = (importeEmpresa + paroMes) - irpf;
+        const total = (rentaTel + paroMes) - irpf;
         
         annualTotal += total;
         grandTotal += total;
@@ -818,9 +845,10 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
             <td style="text-transform: capitalize;">${monthName}</td>
             <td>${edadTexto}</td>
             <td style="text-align: right;">${pct}%</td>
-            <td style="text-align: right;">${fmt(importeEmpresa)}</td>
+            <td style="text-align: right;">${fmt(rentaTel)}</td>
             <td style="text-align: right;">${fmtInt(paroMes)}</td>
             <td style="text-align: right; ${irpf > 0 ? 'color: #ef4444; font-weight:bold;' : ''}">${fmt(irpf)}</td>
+            <td style="text-align: right; color: #ef4444;">${fmt(currentSS)}</td>
             <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(total)}</td>
             <td style="text-align: right;">${fmt(movistar)}</td>
             <td style="text-align: right;">${fmt(seguroVida)}</td>
@@ -840,7 +868,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         const trSubtotal = document.createElement('tr');
         trSubtotal.style.backgroundColor = '#f8fafc';
         trSubtotal.innerHTML = `
-            <td colspan="6" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
+            <td colspan="7" style="text-align: right; font-weight: bold; padding-right: 1rem;">Total Año ${currentYear}</td>
             <td style="text-align: right; font-weight: bold; color: var(--primary-dark);">${fmt(annualTotal)}</td>
             <td colspan="5"></td>
         `;
@@ -851,7 +879,7 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         trGrandTotal.style.backgroundColor = '#e0e7ff';
         trGrandTotal.style.borderTop = '2px solid var(--primary)';
         trGrandTotal.innerHTML = `
-            <td colspan="6" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
+            <td colspan="7" style="text-align: right; font-weight: bold; font-size: 1.1rem; padding-right: 1rem;">TOTAL NETO ACUMULADO</td>
             <td style="text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark);">${fmt(grandTotal)}</td>
             <td colspan="5"></td>
         `;
@@ -868,7 +896,8 @@ function getEconomicState() {
     const ids = [
         'eco-salario', 'eco-antiguedad', 'eco-subida-pct',
         'eco-consolidacion', 'eco-otros', 'eco-pct63', 'eco-pct65',
-        'exen-movistar', 'exen-seguro', 'exen-vida'
+        'exen-movistar', 'exen-seguro', 'exen-vida', 'exen-factor',
+        'eco-sepe-importe', 'eco-sepe-ss'
     ];
     const data = {};
     ids.forEach(id => {
