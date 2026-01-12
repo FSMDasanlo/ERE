@@ -356,19 +356,19 @@ function calculateEconomic() {
     const otros = getVal('eco-otros');
 
     // Suma de conceptos positivos
-    const sumaConceptos = salario + antiguedad + subidaImporte + consolidacion + otros;
+    const sumaConceptos = salario + antiguedad + subidaImporte  + otros;
     
     // Base de cálculo (Suma de conceptos)
     const baseCalculo = sumaConceptos;
 
     // 1. Salario Base hasta 63 años: (Base * 15 * %Tramo1)
-    const base63 = baseCalculo * 15 * (pct63 / 100);
+    const base63 = ((baseCalculo * 15 ) + consolidacion)* (pct63 / 100);
     
     // 2. Mensual hasta 63 años: (Anterior / 12)
     const mensual63 = base63 / 12;
 
     // 3. Salario Base 63-65 años: (Base * 15 * %Tramo2)
-    const base65 = baseCalculo * 15 * (pct65 / 100);
+    const base65 = ((baseCalculo * 15)+ consolidacion) * (pct65 / 100);
 
     // 4. Mensual 63-65 años: (Anterior / 12)
     const mensual65 = base65 / 12;
@@ -376,14 +376,14 @@ function calculateEconomic() {
     // Mostrar resultados formateados en Euros
     const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
-    document.getElementById('res-total-bruto').textContent = fmt(sumaConceptos * 15);
+    document.getElementById('res-total-bruto').textContent = fmt(sumaConceptos * 15+ consolidacion);
     document.getElementById('res-base63').textContent = fmt(base63);
     document.getElementById('res-mensual63').textContent = fmt(mensual63);
     document.getElementById('res-base65').textContent = fmt(base65);
     document.getElementById('res-mensual65').textContent = fmt(mensual65);
 
     // Cálculo del Límite Global (Base Anual Total * Factor)
-    const limiteGlobal = (baseCalculo * 15) * factor;
+    const limiteGlobal = ((baseCalculo * 15)+ consolidacion) * factor;
     const inputLimite = document.getElementById('exen-limite');
     inputLimite.value = fmt(limiteGlobal);
     inputLimite.dataset.value = limiteGlobal; // Guardamos el valor numérico para guardarlo después
@@ -478,7 +478,8 @@ function loadReportData() {
             const consolidacion = data.eco_consolidacion || 0;
             const otros = data.eco_otros || 0;
             
-            const sumaConceptos = salario + antiguedad + subida + consolidacion + otros;
+            // Consolidación es anual, no se multiplica por 15
+            const sumaMensuales = salario + antiguedad + subida + otros;
             
             // Porcentajes dinámicos
             const pct63 = data.eco_pct63 || 62;
@@ -491,10 +492,11 @@ function loadReportData() {
             const sepeNeto = (sepeImporte !== undefined) ? (sepeImporte - sepeSS) : undefined;
 
             // Cálculos de bases anuales
-            const base63 = sumaConceptos * 15 * (pct63 / 100);
-            const base65 = sumaConceptos * 15 * (pct65 / 100);
+            const baseAnualTotal = (sumaMensuales * 15) + consolidacion;
+            const base63 = baseAnualTotal * (pct63 / 100);
+            const base65 = baseAnualTotal * (pct65 / 100);
             // Recalculamos el límite para asegurar que usa la fórmula correcta (Total Anual * Factor)
-            const limite = (sumaConceptos * 15) * factor;
+            const limite = baseAnualTotal * factor;
 
             const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
@@ -505,7 +507,7 @@ function loadReportData() {
             // 3. Generar Tabla de Simulación
             const fechaInicio = document.getElementById('rep-fecha-inicio').value;
             if (fechaInicio && data.nacimiento) {
-                renderSimulationTable(data, fechaInicio, sumaConceptos, limite, pct63, pct65, sepeNeto);
+                renderSimulationTable(data, fechaInicio, sumaMensuales, consolidacion, limite, pct63, pct65, sepeNeto);
             } else {
                 console.log("Falta fecha de inicio o fecha de nacimiento para generar la tabla.");
             }
@@ -661,7 +663,7 @@ function calculateProgressiveIrpf(annualTaxableAmount) {
     return tax;
 }
 
-function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal, pct63, pct65, sepeNeto) {
+function renderSimulationTable(data, fechaInicioStr, sumaMensuales, consolidacion, limiteGlobal, pct63, pct65, sepeNeto) {
     console.log(`Generando tabla. Inicio: ${fechaInicioStr}, Nacimiento: ${data.nacimiento}`);
     const container = document.getElementById('simulation-table-container');
     container.innerHTML = ''; // Limpiar tabla anterior
@@ -792,8 +794,8 @@ function renderSimulationTable(data, fechaInicioStr, sumaConceptos, limiteGlobal
         const pct = isUnder63 ? pct63 : pct65;
         
         // Objetivo Mensual (Lo que se debería cobrar en total bruto antes de especies)
-        // Base Anual = sumaConceptos * 15
-        const baseAnual = sumaConceptos * 15;
+        // Base Anual = (sumaMensuales * 15) + consolidacion
+        const baseAnual = (sumaMensuales * 15) + consolidacion;
         const objetivoMensual = (baseAnual * (pct / 100)) / 12;
 
         // Lógica de Paro (Máximo 24 meses)
