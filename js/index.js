@@ -675,24 +675,58 @@ function calculateProgressiveIrpf(annualTaxableAmount) {
     return tax;
 }
 
+// Función auxiliar para calcular años de servicio con prorrateo mensual (Regla oficial)
+// "Los periodos de tiempo inferiores a un año se prorratearán por meses"
+// Esto significa que cualquier fracción de mes cuenta como mes completo.
+function getProratedYears(startDate, endDate) {
+    let d1 = new Date(startDate);
+    let d2 = new Date(endDate);
+    
+    if (d1 > d2) return 0;
+
+    // Cálculo de diferencia en meses naturales
+    let years = d2.getFullYear() - d1.getFullYear();
+    let monthsDiff = d2.getMonth() - d1.getMonth();
+    let daysDiff = d2.getDate() - d1.getDate();
+    
+    let totalMonths = years * 12 + monthsDiff;
+
+    // Si el día de fin es igual o posterior al día de inicio, hemos entrado en el siguiente mes (o completado el actual)
+    // Si es anterior, estamos en la fracción del mes que ya hemos sumado con la diferencia de meses?
+    // Ejemplo: 15 Enero a 14 Febrero. MesesDiff=1. DaysDiff=-1. Total=1. (0 meses completos + 30 días -> 1 mes). Correcto.
+    // Ejemplo: 15 Enero a 15 Febrero. MesesDiff=1. DaysDiff=0. Total=1. Pero 15 a 15 implica iniciar el siguiente periodo mensual.
+    // La regla habitual es: Si hay días "sueltos" tras los meses completos, +1.
+    
+    // Ajuste fino para prorrateo al alza:
+    // Si daysDiff >= 0, significa que hemos superado la fecha del día de inicio en el mes final,
+    // por lo que cuenta como un mes extra (o fracción que redondea a 1).
+    if (daysDiff >= 0) {
+        totalMonths += 1;
+    }
+    
+    return totalMonths / 12;
+}
+
 function calculateLegalIndemnity(annualSalary, startDateStr) {
     if (!startDateStr || !annualSalary) return 0;
     
     const start = new Date(startDateStr);
     const end = new Date('2026-02-28'); // Fecha estimada ERE
     const reformDate = new Date('2012-02-12');
+    // Fecha fin del primer tramo (día anterior a la reforma)
+    const endTramo1 = new Date('2012-02-11');
 
     if (start >= end) return 0;
 
+    // Para el salario diario, la jurisprudencia suele aceptar 365 días como divisor estándar
+    // salvo años bisiestos específicos, pero 365 es el estándar conservador aceptado.
     const dailySalary = annualSalary / 365;
-    const oneDay = 24 * 60 * 60 * 1000;
     
     let totalIndemnity = 0;
 
     if (start > reformDate) {
         // Caso 1: Entrada posterior a 12/02/2012 (Solo tramo 33 días)
-        const daysWorked = Math.round(Math.abs((end - start) / oneDay)) + 1;
-        const years = daysWorked / 365;
+        const years = getProratedYears(start, end);
         totalIndemnity = years * 33 * dailySalary;
         
         // Tope: 24 mensualidades
@@ -702,14 +736,13 @@ function calculateLegalIndemnity(annualSalary, startDateStr) {
         // Caso 2: Entrada anterior a 12/02/2012 (Doble tramo)
         
         // Tramo 1: Hasta 12/02/2012 (45 días)
-        const days1 = Math.round(Math.abs((reformDate - start) / oneDay)) + 1;
-        const years1 = days1 / 365;
+        // OJO: El tramo 1 acaba el 11/02/2012
+        const years1 = getProratedYears(start, endTramo1);
         const amount1 = years1 * 45 * dailySalary;
 
         // Tramo 2: Desde 13/02/2012 (33 días)
-        const nextDayReform = new Date('2012-02-13');
-        const days2 = Math.round(Math.abs((end - nextDayReform) / oneDay)) + 1;
-        const years2 = days2 / 365;
+        // El tramo 2 empieza el 12/02/2012
+        const years2 = getProratedYears(reformDate, end);
         const amount2 = years2 * 33 * dailySalary;
 
         totalIndemnity = amount1 + amount2;
@@ -719,13 +752,13 @@ function calculateLegalIndemnity(annualSalary, startDateStr) {
         const cap42Mensualidades = 42 * (annualSalary / 12); // 1260 días
 
         if (amount1 > cap720Days) {
-            // Si lo generado antes de 2012 ya supera los 720 días, se respeta ese importe (tope 42 men.)
+            // Si lo generado ANTES de 2012 ya supera los 720 días, se respeta ese importe (tope 42 men.)
             // y no se suma nada del periodo posterior.
             totalIndemnity = Math.min(amount1, cap42Mensualidades);
         } else {
             // Si no, la suma de ambos no puede superar 720 días
             totalIndemnity = Math.min(totalIndemnity, cap720Days);
-        }
+       }
     }
     return totalIndemnity;
 }
