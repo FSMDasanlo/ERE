@@ -229,7 +229,7 @@
                                     <input type="text" id="exen-legal" placeholder="0,00 €" readonly style="text-align: right; background-color: #f3f4f6; font-size: 0.9rem;">
                                 </div>
                                 <div style="flex: 2;">
-                                    <label style="color: var(--secondary); font-weight: 600; font-size: 0.8rem; cursor: help;" title="Mínimo(Indemnización Legal, 180.000€). La legal se calcula según antigüedad (45/33 días. Con límite de 720 salvo que estén dentro del primer periodo).">Límite Exento <i class="fas fa-info-circle"></i></label>
+                                    <label style="color: var(--secondary); font-weight: 600; font-size: 0.8rem;"><span style="cursor: help;" title="Mínimo(Indemnización Legal, 180.000€). La legal se calcula según antigüedad (45/33 días. Con límite de 720 salvo que estén dentro del primer periodo).">Límite Exento <i class="fas fa-info-circle"></i></span> <i class="fas fa-question-circle" id="btn-exen-help" style="cursor: pointer; margin-left: 0.5rem; color: var(--primary);" title="Ver explicación detallada regla 720 días"></i></label>
                                     <input type="text" id="exen-limite" placeholder="0,00 €" readonly style="background-color: transparent; border: none; text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark); width: 100%; padding: 0.25rem 0;">
                                 </div>
                             </div>
@@ -248,6 +248,53 @@
         </div>
     </div>
     </div> <!-- Fin de app-view -->
+
+    <!-- Modal Ayuda Exención -->
+    <div id="modal-exen-help" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2><i class="fas fa-info-circle"></i> Información sobre la Regla de los 720 días</h2>
+            <div style="text-align: left; font-size: 0.95rem; line-height: 1.6;">
+                <h3 style="color: var(--primary); margin-top: 0;">🔑 La regla de los 720 días (bien entendida)</h3>
+                <p>El tope de 720 días NO funciona siempre como un “corte seco”. Depende de dónde salgan esos días.</p>
+                
+                <p><strong>La ley dice (resumen claro):</strong></p>
+                <p>En despidos objetivos / ERE:</p>
+                <p>Se calcula:</p>
+                <ul style="margin-bottom: 1rem;">
+                    <li><strong>45 días/año</strong> por el tiempo anterior al 12/02/2012</li>
+                    <li><strong>33 días/año</strong> por el tiempo posterior</li>
+                </ul>
+                
+                <p>El total no puede superar 720 días, SALVO que:</p>
+                <p style="background-color: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem;"><em>solo el periodo anterior al 12/02/2012 ya genere más de 720 días</em></p>
+                
+                <p>En ese caso:</p>
+                <ul style="margin-bottom: 1rem;">
+                    <li>se respetan todos los días del tramo pre-2012</li>
+                    <li>con un límite máximo absoluto de <strong>42 mensualidades</strong></li>
+                </ul>
+
+                <h3 style="color: var(--primary); margin-top: 1.5rem;">📌 Aplicado a tu caso concreto</h3>
+                <p><strong>Tramo pre-2012:</strong><br>
+                16,75 años × 45 = 753,75 días</p>
+                
+                <p>👉 Como este tramo por sí solo supera 720, se activa la excepción legal:</p>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>❌ NO se recorta a 720</li>
+                    <li>❌ NO se añade nada posterior</li>
+                    <li>✔️ Se mantiene 753,75 días completos</li>
+                    <li>✔️ Límite único: 42 mensualidades (1.260 días)</li>
+                </ul>
+                
+                <div style="background-color: #eff6ff; border-left: 4px solid var(--primary); padding: 1rem; margin-top: 1rem;">
+                    <strong>Conclusión:</strong><br>
+                    Y 753,75 días = 25,1 mensualidades<br>
+                    👉 Muy lejos del máximo permitido
+                </div>
+            </div>
+        </div>
+    </div>
 
 <!-- Scripts de Firebase y de la aplicación -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>

@@ -156,6 +156,16 @@ function initApp() {
         cardAdmin.addEventListener('click', () => window.location.href = 'admin.html');
     }
 
+    // Manejar Botón Ayuda Exención
+    const btnExenHelp = document.getElementById('btn-exen-help');
+    const modalExenHelp = document.getElementById('modal-exen-help');
+    if(btnExenHelp && modalExenHelp) {
+        btnExenHelp.addEventListener('click', (e) => {
+            e.preventDefault();
+            modalExenHelp.style.display = 'block';
+        });
+    }
+
     // Manejar Botón de Imprimir
     const btnPrint = document.getElementById('btn-print');
     if(btnPrint) {
