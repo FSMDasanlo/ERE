@@ -92,6 +92,10 @@
                     <label for="nacimiento">Fecha de Nacimiento</label>
                     <input type="date" id="nacimiento" name="nacimiento" required>
                 </div>
+                <div class="form-group">
+                    <label for="fecha-antiguedad">Fecha Antigüedad (Entrada Empresa)</label>
+                    <input type="date" id="fecha-antiguedad" name="fecha-antiguedad">
+                </div>
                 <button type="submit" class="btn-save">Guardar Datos</button>
             </form>
         </div>
@@ -221,11 +225,11 @@
                             <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--primary-dark); font-weight: 600;">IMPORTE EXENCION</h4>
                             <div style="display: flex; gap: 0.5rem;">
                                 <div style="flex: 1;">
-                                    <label style="font-size: 0.8rem;">Factor</label>
-                                    <input type="number" step="0.01" id="exen-factor" value="2.56" placeholder="2.56" style="text-align: center;">
+                                    <label style="font-size: 0.8rem;">Indem. Legal</label>
+                                    <input type="text" id="exen-legal" placeholder="0,00 €" readonly style="text-align: right; background-color: #f3f4f6; font-size: 0.9rem;">
                                 </div>
                                 <div style="flex: 2;">
-                                    <label style="color: var(--secondary); font-weight: 600; font-size: 0.8rem;">Límite Exento</label>
+                                    <label style="color: var(--secondary); font-weight: 600; font-size: 0.8rem; cursor: help;" title="Mínimo(Indemnización Legal, 180.000€). La legal se calcula según antigüedad (45/33 días).">Límite Exento <i class="fas fa-info-circle"></i></label>
                                     <input type="text" id="exen-limite" placeholder="0,00 €" readonly style="background-color: transparent; border: none; text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark); width: 100%; padding: 0.25rem 0;">
                                 </div>
                             </div>
