@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progresión de Cobros - ERE26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="container header-content">
+            <h1><i class="fas fa-signal"></i> Progresión de Cobros</h1>
+            <div class="user-info">
+                <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="pension-grid">
+            <!-- CAJA OPCIÓN 1 -->
+            <div class="card">
+                <div class="option-header">
+                    <h2>Escenario A</h2>
+                </div>
+                
+                <form id="form-opt1">
+                    <!-- Sección Pensión -->
+                    <div class="section-header">
+                        <i class="fas fa-landmark"></i>
+                        <h3>Pensión Pública</h3>
+                    </div>
+                    <div class="row-inputs">
+                        <div class="form-group compact" style="flex: 2;">
+                            <label>Base reguladora</label>
+                            <input type="number" step="0.01" id="opt1-pension-importe" placeholder="0.00 €">
+                        </div>
+                        <div class="form-group compact">
+                            <label>% Reductor</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt1-pension-reducctor" placeholder="0">
+                                <span class="symbol-suffix">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-inputs">
+                        <div class="form-group compact">
+                            <label>Fecha Jubilación</label>
+                            <input type="date" id="opt1-pension-fecha">
+                        </div>
+                        <div class="form-group compact">
+                            <label style="color: #b91c1c;">Convenio Especial</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt1-convenio" placeholder="0.00" style="border-color: #fca5a5; background-color: #fef2f2;">
+                                <span class="symbol-suffix" style="color: #b91c1c;">€</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- CAJA OPCIÓN 2 -->
+            <div class="card">
+                <div class="option-header">
+                    <h2>Escenario B</h2>
+                </div>
+                
+                <form id="form-opt2">
+                    <!-- Sección Pensión -->
+                    <div class="section-header">
+                        <i class="fas fa-landmark"></i>
+                        <h3>Pensión Pública</h3>
+                    </div>
+                    <div class="row-inputs">
+                        <div class="form-group compact" style="flex: 2;">
+                            <label>Base reguladora</label>
+                            <input type="number" step="0.01" id="opt2-pension-importe" placeholder="0.00 €">
+                        </div>
+                        <div class="form-group compact">
+                            <label>% Reductor</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt2-pension-reducctor" placeholder="0">
+                                <span class="symbol-suffix">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-inputs">
+                        <div class="form-group compact">
+                            <label>Fecha Jubilación</label>
+                            <input type="date" id="opt2-pension-fecha">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Caja de Acciones -->
+        <div class="card actions-card">
+            <div class="actions-content">
+                <div class="actions-text">
+                    <h3>Análisis y Comparativa</h3>
+                    <p>Introduce los datos en ambos escenarios y pulsa el botón para generar una tabla comparativa mes a mes hasta los 65 años.</p>
+                </div>
+                <button id="btn-calculate-pension" class="btn-save">
+                    <i class="fas fa-calculator"></i> Calcular Comparativa
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenedor para el gráfico -->
+        <div id="chart-card" class="card" style="margin-top: 2rem; display: none;">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+
+        <!-- Botones de Exportación -->
+        <div id="export-buttons" style="display: none; text-align: right; margin-top: 1rem; gap: 0.5rem;">
+            <button id="btn-export-excel" class="btn-secondary" style="width: auto; display: inline-block;">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+            <button id="btn-export-pdf" class="btn-secondary" style="width: auto; display: inline-block;">
+                <i class="fas fa-file-pdf"></i> Imprimir / PDF
+            </button>
+        </div>
+
+        <!-- Contenedor para los resultados -->
+        <div id="comparison-results-container" class="results-container">
+            <!-- La tabla se generará aquí con JavaScript -->
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/pension.js"></script>
+</body>
+</html>

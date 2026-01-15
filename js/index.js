@@ -26,6 +26,7 @@ function initApp() {
     const cardPersonal = document.getElementById('card-personal');
     const cardEconomic = document.getElementById('card-economic');
     const cardSimulation = document.getElementById('card-simulation');
+    const cardPension = document.getElementById('card-pension');
     const cardAdmin = document.getElementById('card-admin');
     
     // Elementos de Login y Vistas
@@ -152,6 +153,9 @@ function initApp() {
     if(cardSimulation) {
         cardSimulation.addEventListener('click', () => navigateTo('simulation'));
     }
+    if(cardPension) {
+        cardPension.addEventListener('click', () => navigateTo('pension'));
+    }
     if(cardAdmin) {
         cardAdmin.addEventListener('click', () => window.location.href = 'admin.html');
     }
@@ -206,6 +210,9 @@ function navigateTo(section) {
         case 'simulation':
             // Navegar a la página de informe
             window.location.href = 'informe.html';
+            break;
+        case 'pension':
+            window.location.href = 'pension.html';
             break;
     }
 }
