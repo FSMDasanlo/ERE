@@ -26,15 +26,11 @@
             <!-- CAJA OPCIÓN 1 -->
             <div class="card">
                 <div class="option-header">
-                    <h2>Escenario A</h2>
+                    <h2>Escenario A <span id="opt1-age-lbl" style="font-size: 0.7em; color: #6b7280; font-weight: normal; margin-left: 0.5rem;"></span></h2>
                 </div>
                 
                 <form id="form-opt1">
                     <!-- Sección Pensión -->
-                    <div class="section-header">
-                        <i class="fas fa-landmark"></i>
-                        <h3>Pensión Pública</h3>
-                    </div>
                     <div class="row-inputs">
                         <div class="form-group compact" style="flex: 2;">
                             <label>Base reguladora</label>
@@ -60,6 +56,13 @@
                                 <span class="symbol-suffix" style="color: #b91c1c;">€</span>
                             </div>
                         </div>
+                        <div class="form-group compact">
+                            <label>IPC Estimado</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt1-reval" placeholder="2.0">
+                                <span class="symbol-suffix">%</span>
+                            </div>
+                        </div>
                     </div>
 
                 </form>
@@ -68,15 +71,11 @@
             <!-- CAJA OPCIÓN 2 -->
             <div class="card">
                 <div class="option-header">
-                    <h2>Escenario B</h2>
+                    <h2>Escenario B <span id="opt2-age-lbl" style="font-size: 0.7em; color: #6b7280; font-weight: normal; margin-left: 0.5rem;"></span></h2>
                 </div>
                 
                 <form id="form-opt2">
                     <!-- Sección Pensión -->
-                    <div class="section-header">
-                        <i class="fas fa-landmark"></i>
-                        <h3>Pensión Pública</h3>
-                    </div>
                     <div class="row-inputs">
                         <div class="form-group compact" style="flex: 2;">
                             <label>Base reguladora</label>
@@ -95,6 +94,20 @@
                             <label>Fecha Jubilación</label>
                             <input type="date" id="opt2-pension-fecha">
                         </div>
+                        <div class="form-group compact">
+                            <label style="color: #b91c1c;">Convenio Especial</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt2-convenio" placeholder="0.00" style="border-color: #fca5a5; background-color: #fef2f2;">
+                                <span class="symbol-suffix" style="color: #b91c1c;">€</span>
+                            </div>
+                        </div>
+                        <div class="form-group compact">
+                            <label>IPC Estimado</label>
+                            <div class="input-with-symbol">
+                                <input type="number" step="0.01" id="opt2-reval" placeholder="2.0">
+                                <span class="symbol-suffix">%</span>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -107,10 +120,20 @@
                     <h3>Análisis y Comparativa</h3>
                     <p>Introduce los datos en ambos escenarios y pulsa el botón para generar una tabla comparativa mes a mes hasta los 65 años.</p>
                 </div>
-                <button id="btn-calculate-pension" class="btn-save">
-                    <i class="fas fa-calculator"></i> Calcular Comparativa
-                </button>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: center;">
+                    <button id="btn-save-pension" class="btn-secondary" style="width: auto;">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                    <button id="btn-calculate-pension" class="btn-save" style="width: auto;">
+                        <i class="fas fa-calculator"></i> Calcular Comparativa
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- Cabecera para impresión (se rellena con JS) -->
+        <div id="print-header">
+            <!-- Contenido dinámico para la cabecera de impresión -->
         </div>
 
         <!-- Contenedor para el gráfico -->

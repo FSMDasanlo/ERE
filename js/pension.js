@@ -16,6 +16,7 @@ const auth = firebase.auth();
 
 let comparisonChart = null; // Variable global para la instancia del gráfico
 let lastSimulationData = []; // Variable para almacenar los datos de la última simulación
+let currentUserBirthDate = null; // Variable para la fecha de nacimiento
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
@@ -25,6 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnCalculate) {
                 btnCalculate.addEventListener('click', () => runComparison(user));
             }
+
+            const btnSave = document.getElementById('btn-save-pension');
+            if (btnSave) {
+                btnSave.addEventListener('click', () => savePensionData(user));
+            }
+
+            // Cargar datos guardados previamente
+            loadPensionData(user);
 
             // Listeners para exportación
             const btnExcel = document.getElementById('btn-export-excel');
@@ -46,7 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         d.setFullYear(d.getFullYear() + 2);
                         dateB.value = d.toISOString().split('T')[0];
                     }
+                    updateHeaderAges();
                 });
+                // Actualizar edad también al cambiar manualmente la fecha B
+                dateB.addEventListener('change', updateHeaderAges);
             }
         } else {
             // Si no hay usuario, redirigir a la página de login
@@ -88,12 +100,15 @@ async function runComparison(user) {
         pensionFecha: getVal('opt1-pension-fecha') ? new Date(getVal('opt1-pension-fecha')) : null,
         pensionReductor: getNum('opt1-pension-reducctor') / 100,
         convenio: getNum('opt1-convenio'),
+        reval: getNum('opt1-reval') / 100,
     };
 
     const opt2 = {
         pensionImporte: getNum('opt2-pension-importe'),
         pensionFecha: getVal('opt2-pension-fecha') ? new Date(getVal('opt2-pension-fecha')) : null,
         pensionReductor: getNum('opt2-pension-reducctor') / 100,
+        convenio: getNum('opt2-convenio'),
+        reval: getNum('opt2-reval') / 100,
     };
 
     // 3. Determinar fecha de inicio de la simulación
@@ -103,7 +118,8 @@ async function runComparison(user) {
     }
     // Empezamos la simulación en la fecha más temprana de las dos, ajustada al día 1 del mes
     let currentDate = new Date(Math.min(opt1.pensionFecha, opt2.pensionFecha));
-    currentDate.setDate(1); 
+    currentDate.setDate(1);
+    const simulationStartDate = new Date(currentDate); // Guardamos fecha inicio para no revalorizar el primer mes
 
     // 4. Bucle de simulación
     let resultsData = [];
@@ -111,23 +127,35 @@ async function runComparison(user) {
     let acc2 = 0;
     let breakEvenPointFound = false;
 
+    // Variables de estado para la base reguladora (que irá creciendo con el IPC)
+    let currentBase1 = opt1.pensionImporte;
+    let currentBase2 = opt2.pensionImporte;
+
     while (currentDate < maxDate) {
+        // Aplicar revalorización anual en Enero (si no es el mes de inicio de la simulación)
+        if (currentDate.getMonth() === 0 && currentDate.getTime() > simulationStartDate.getTime()) {
+            currentBase1 *= (1 + opt1.reval);
+            currentBase2 *= (1 + opt2.reval);
+        }
+
         let monthly1 = 0;
         let monthly2 = 0;
 
+        // Aplicar coste único de Convenio Especial solo en el primer mes de la simulación
+        if (resultsData.length === 0) {
+            monthly1 += opt1.convenio;
+            monthly2 += opt2.convenio;
+        }
+
         // --- Cálculo Opción 1 ---
         if (currentDate >= opt1.pensionFecha) {
-            monthly1 += opt1.pensionImporte * (1 - opt1.pensionReductor);
-        } else {
-            // Si no está jubilado en Opción 1, aplicamos el gasto del Convenio Especial (si existe)
-            // 
-            monthly1 += opt1.convenio;
+            monthly1 += currentBase1 * (1 - opt1.pensionReductor);
         }
         acc1 += monthly1;
 
         // --- Cálculo Opción 2 ---
         if (currentDate >= opt2.pensionFecha) {
-            monthly2 += opt2.pensionImporte * (1 - opt2.pensionReductor);
+            monthly2 += currentBase2 * (1 - opt2.pensionReductor);
         }
         acc2 += monthly2;
         
@@ -147,7 +175,7 @@ async function runComparison(user) {
         if (resultsData.length > 0) {
             const prevDiff = resultsData[resultsData.length - 1].diffAcc;
             // Si había diferencia previa (no era 0) y el signo cambia, hemos encontrado el cruce
-            // Buscamos específicamente cuando la Opción 1 deja de ser ventajosa ()
+            // Buscamos específicamente cuando la Opción 1 deja de ser ventajosa
             if (prevDiff > 0 && diffAcc <= 0) {
                 stopLoop = true;
                 breakEvenPointFound = true;
@@ -178,6 +206,7 @@ async function runComparison(user) {
     // 5. Renderizar la tabla
     renderComparisonTable(resultsData, resultsContainer, breakEvenPointFound);
     renderChart(resultsData);
+    renderPrintHeader(opt1, opt2);
 }
 
 function renderComparisonTable(data, container, breakEvenPointFound) {
@@ -340,6 +369,16 @@ function exportToCSV() {
         return;
     }
 
+    // Obtener años para el nombre del fichero
+    const date1 = document.getElementById('opt1-pension-fecha').value;
+    const date2 = document.getElementById('opt2-pension-fecha').value;
+    let filename = "comparativa_pensiones.csv"; // Nombre por defecto
+    if (date1 && date2) {
+        const year1 = date1.split('-')[0];
+        const year2 = date2.split('-')[0];
+        filename = `comparativo_${year1}_${year2}.csv`;
+    }
+
     let csv = "Fecha;Edad;Opción 1 (Mensual);Opción 1 (Acumulado);Opción 2 (Mensual);Opción 2 (Acumulado);Diferencia\n";
     
     lastSimulationData.forEach(row => {
@@ -352,9 +391,116 @@ function exportToCSV() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "comparativa_pensiones.csv");
+    link.setAttribute("download", filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function renderPrintHeader(opt1, opt2) {
+    const headerContainer = document.getElementById('print-header');
+    if (!headerContainer) return;
+
+    const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+    const fmtPct = (num) => (num * 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+    const fmtDate = (date) => date ? date.toLocaleDateString('es-ES') : '-';
+
+    headerContainer.innerHTML = `
+        <h2>Resumen de Parámetros</h2>
+        <div class="print-grid">
+            <div>
+                <h3>Escenario A</h3>
+                <p><strong>Base Reguladora:</strong> ${fmt(opt1.pensionImporte)}</p>
+                <p><strong>% Reductor:</strong> ${fmtPct(opt1.pensionReductor)}</p>
+                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt1.pensionFecha)}</p>
+                <p><strong>Convenio Especial (Total):</strong> ${fmt(opt1.convenio)}</p>
+                <p><strong>IPC Estimado:</strong> ${fmtPct(opt1.reval)}</p>
+            </div>
+            <div>
+                <h3>Escenario B</h3>
+                <p><strong>Base Reguladora:</strong> ${fmt(opt2.pensionImporte)}</p>
+                <p><strong>% Reductor:</strong> ${fmtPct(opt2.pensionReductor)}</p>
+                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt2.pensionFecha)}</p>
+                <p><strong>Convenio Especial (Total):</strong> ${fmt(opt2.convenio)}</p>
+                <p><strong>IPC Estimado:</strong> ${fmtPct(opt2.reval)}</p>
+            </div>
+        </div>
+    `;
+}
+
+function savePensionData(user) {
+    const getVal = id => document.getElementById(id).value;
+    
+    const data = {
+        pension_opt1_importe: getVal('opt1-pension-importe'),
+        pension_opt1_reductor: getVal('opt1-pension-reducctor'),
+        pension_opt1_fecha: getVal('opt1-pension-fecha'),
+        pension_opt1_convenio: getVal('opt1-convenio'),
+        pension_opt1_reval: getVal('opt1-reval'),
+        
+        pension_opt2_importe: getVal('opt2-pension-importe'),
+        pension_opt2_reductor: getVal('opt2-pension-reducctor'),
+        pension_opt2_fecha: getVal('opt2-pension-fecha'),
+        pension_opt2_convenio: getVal('opt2-convenio'),
+        pension_opt2_reval: getVal('opt2-reval'),
+        
+        pension_updated: new Date()
+    };
+
+    db.collection('empleados').doc(user.uid).set(data, { merge: true })
+        .then(() => alert('Datos de pensión guardados correctamente.'))
+        .catch(err => {
+            console.error(err);
+            alert('Error al guardar los datos.');
+        });
+}
+
+function loadPensionData(user) {
+    db.collection('empleados').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.nacimiento) currentUserBirthDate = new Date(data.nacimiento);
+
+            const setVal = (id, val) => { if(val !== undefined) document.getElementById(id).value = val; };
+            
+            setVal('opt1-pension-importe', data.pension_opt1_importe);
+            setVal('opt1-pension-reducctor', data.pension_opt1_reductor);
+            setVal('opt1-pension-fecha', data.pension_opt1_fecha);
+            setVal('opt1-convenio', data.pension_opt1_convenio);
+            setVal('opt1-reval', data.pension_opt1_reval);
+            
+            setVal('opt2-pension-importe', data.pension_opt2_importe);
+            setVal('opt2-pension-reducctor', data.pension_opt2_reductor);
+            setVal('opt2-pension-fecha', data.pension_opt2_fecha);
+            setVal('opt2-convenio', data.pension_opt2_convenio);
+            setVal('opt2-reval', data.pension_opt2_reval);
+            
+            updateHeaderAges();
+        }
+    }).catch(err => console.error("Error cargando datos de pensión:", err));
+}
+
+function updateHeaderAges() {
+    if (!currentUserBirthDate) return;
+
+    const updateLabel = (dateId, labelId) => {
+        const dateVal = document.getElementById(dateId).value;
+        const label = document.getElementById(labelId);
+        if (dateVal && label) {
+            const d = new Date(dateVal);
+            let ageYears = d.getFullYear() - currentUserBirthDate.getFullYear();
+            let ageMonths = d.getMonth() - currentUserBirthDate.getMonth();
+            if (ageMonths < 0 || (ageMonths === 0 && d.getDate() < currentUserBirthDate.getDate())) {
+                ageYears--;
+                ageMonths = (ageMonths + 12) % 12;
+            }
+            label.textContent = `(${ageYears}a ${ageMonths}m)`;
+        } else if (label) {
+            label.textContent = '';
+        }
+    };
+
+    updateLabel('opt1-pension-fecha', 'opt1-age-lbl');
+    updateLabel('opt2-pension-fecha', 'opt2-age-lbl');
 }
