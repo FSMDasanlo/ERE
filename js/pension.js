@@ -119,17 +119,33 @@ async function runComparison(user) {
     // Empezamos la simulación en la fecha más temprana de las dos, ajustada al día 1 del mes
     let currentDate = new Date(Math.min(opt1.pensionFecha, opt2.pensionFecha));
     currentDate.setDate(1);
+    currentDate.setHours(0, 0, 0, 0);
     const simulationStartDate = new Date(currentDate); // Guardamos fecha inicio para no revalorizar el primer mes
 
     // 4. Bucle de simulación
     let resultsData = [];
-    let acc1 = 0;
-    let acc2 = 0;
+    let acc1 = opt1.convenio; // Inicializamos con el coste del convenio
+    let acc2 = opt2.convenio;
     let breakEvenPointFound = false;
 
     // Variables de estado para la base reguladora (que irá creciendo con el IPC)
     let currentBase1 = opt1.pensionImporte;
     let currentBase2 = opt2.pensionImporte;
+
+    // Insertar fila independiente de Convenio si existe importe
+    if (opt1.convenio !== 0 || opt2.convenio !== 0) {
+        let tm = (currentDate.getFullYear() - birthDate.getFullYear()) * 12 + (currentDate.getMonth() - birthDate.getMonth());
+        resultsData.push({
+            date: new Date(currentDate),
+            age: `${Math.floor(tm / 12)}a ${tm % 12}m`,
+            monthly1: opt1.convenio,
+            acc1: acc1,
+            monthly2: opt2.convenio,
+            acc2: acc2,
+            diffAcc: acc1 - acc2,
+            isConvenio: true // Marcador para identificar esta fila
+        });
+    }
 
     while (currentDate < maxDate) {
         // Aplicar revalorización anual en Enero (si no es el mes de inicio de la simulación)
@@ -141,31 +157,27 @@ async function runComparison(user) {
         let monthly1 = 0;
         let monthly2 = 0;
 
-        // Aplicar coste único de Convenio Especial solo en el primer mes de la simulación
-        if (resultsData.length === 0) {
-            monthly1 += opt1.convenio;
-            monthly2 += opt2.convenio;
-        }
-
         // --- Cálculo Opción 1 ---
-        if (currentDate >= opt1.pensionFecha) {
+        // Comparamos si el mes actual es posterior o igual al mes de jubilación (ignorando el día)
+        const p1Active = (currentDate.getFullYear() > opt1.pensionFecha.getFullYear()) || 
+                         (currentDate.getFullYear() === opt1.pensionFecha.getFullYear() && currentDate.getMonth() >= opt1.pensionFecha.getMonth());
+        if (p1Active) {
             monthly1 += currentBase1 * (1 - opt1.pensionReductor);
         }
         acc1 += monthly1;
 
         // --- Cálculo Opción 2 ---
-        if (currentDate >= opt2.pensionFecha) {
+        const p2Active = (currentDate.getFullYear() > opt2.pensionFecha.getFullYear()) || 
+                         (currentDate.getFullYear() === opt2.pensionFecha.getFullYear() && currentDate.getMonth() >= opt2.pensionFecha.getMonth());
+        if (p2Active) {
             monthly2 += currentBase2 * (1 - opt2.pensionReductor);
         }
         acc2 += monthly2;
         
         // Cálculo de edad
-        let ageYears = currentDate.getFullYear() - birthDate.getFullYear();
-        let ageMonths = currentDate.getMonth() - birthDate.getMonth();
-        if (ageMonths < 0 || (ageMonths === 0 && currentDate.getDate() < birthDate.getDate())) {
-            ageYears--;
-            ageMonths = (ageMonths + 12) % 12;
-        }
+        let totalMonths = (currentDate.getFullYear() - birthDate.getFullYear()) * 12 + (currentDate.getMonth() - birthDate.getMonth());
+        const ageYears = Math.floor(totalMonths / 12);
+        const ageMonths = totalMonths % 12;
         const edadTexto = `${ageYears}a ${ageMonths}m`;
 
         const diffAcc = acc1 - acc2;
@@ -206,7 +218,7 @@ async function runComparison(user) {
     // 5. Renderizar la tabla
     renderComparisonTable(resultsData, resultsContainer, breakEvenPointFound);
     renderChart(resultsData);
-    renderPrintHeader(opt1, opt2);
+    renderPrintHeader(opt1, opt2, birthDate);
 }
 
 function renderComparisonTable(data, container, breakEvenPointFound) {
@@ -234,13 +246,21 @@ function renderComparisonTable(data, container, breakEvenPointFound) {
     `;
 
     data.forEach(row => {
-        const monthName = row.date.toLocaleString('es-ES', { month: 'short' });
-        const year = row.date.getFullYear();
         const diffClass = row.diffAcc > 0 ? 'positive-diff' : (row.diffAcc < 0 ? 'negative-diff' : '');
+        
+        let dateLabel;
+        let rowStyle = '';
+
+        if (row.isConvenio) {
+            dateLabel = '<span style="color:#b91c1c; font-weight:bold;">Pago Convenio</span>';
+            rowStyle = 'style="background-color: #fef2f2;"';
+        } else {
+            dateLabel = `${row.date.toLocaleString('es-ES', { month: 'short' })}. ${row.date.getFullYear()}`;
+        }
 
         tableHTML += `
-            <tr>
-                <td>${monthName}. ${year}</td>
+            <tr ${rowStyle}>
+                <td>${dateLabel}</td>
                 <td>${row.age}</td>
                 <td class="col-opt1">${fmt(row.monthly1)}</td>
                 <td class="col-opt1">${fmt(row.acc1)}</td>
@@ -382,7 +402,8 @@ function exportToCSV() {
     let csv = "Fecha;Edad;Opción 1 (Mensual);Opción 1 (Acumulado);Opción 2 (Mensual);Opción 2 (Acumulado);Diferencia\n";
     
     lastSimulationData.forEach(row => {
-        const dateStr = row.date.toLocaleDateString('es-ES');
+        let dateStr = row.date.toLocaleDateString('es-ES');
+        if (row.isConvenio) dateStr = "Pago Convenio";
         const fmt = n => n.toFixed(2).replace('.', ','); // Formato español para Excel (coma decimal)
         csv += `${dateStr};${row.age};${fmt(row.monthly1)};${fmt(row.acc1)};${fmt(row.monthly2)};${fmt(row.acc2)};${fmt(row.diffAcc)}\n`;
     });
@@ -398,13 +419,20 @@ function exportToCSV() {
     document.body.removeChild(link);
 }
 
-function renderPrintHeader(opt1, opt2) {
+function renderPrintHeader(opt1, opt2, birthDate) {
     const headerContainer = document.getElementById('print-header');
     if (!headerContainer) return;
 
     const fmt = (num) => num.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
     const fmtPct = (num) => (num * 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     const fmtDate = (date) => date ? date.toLocaleDateString('es-ES') : '-';
+    
+    const getAgeStr = (date) => {
+        if (!date || !birthDate) return '';
+        let tm = (date.getFullYear() - birthDate.getFullYear()) * 12 + (date.getMonth() - birthDate.getMonth());
+        if (date.getDate() < birthDate.getDate()) tm--;
+        return `<span style="font-weight: 900; font-size: 1.3em; border: 2px solid #000; padding: 2px 8px; border-radius: 6px; margin-left: 10px;">${Math.floor(tm / 12)}a ${tm % 12}m</span>`;
+    };
 
     headerContainer.innerHTML = `
         <h2>Resumen de Parámetros</h2>
@@ -413,7 +441,7 @@ function renderPrintHeader(opt1, opt2) {
                 <h3>Escenario A</h3>
                 <p><strong>Base Reguladora:</strong> ${fmt(opt1.pensionImporte)}</p>
                 <p><strong>% Reductor:</strong> ${fmtPct(opt1.pensionReductor)}</p>
-                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt1.pensionFecha)}</p>
+                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt1.pensionFecha)} ${getAgeStr(opt1.pensionFecha)}</p>
                 <p><strong>Convenio Especial (Total):</strong> ${fmt(opt1.convenio)}</p>
                 <p><strong>IPC Estimado:</strong> ${fmtPct(opt1.reval)}</p>
             </div>
@@ -421,7 +449,7 @@ function renderPrintHeader(opt1, opt2) {
                 <h3>Escenario B</h3>
                 <p><strong>Base Reguladora:</strong> ${fmt(opt2.pensionImporte)}</p>
                 <p><strong>% Reductor:</strong> ${fmtPct(opt2.pensionReductor)}</p>
-                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt2.pensionFecha)}</p>
+                <p><strong>Fecha Jubilación:</strong> ${fmtDate(opt2.pensionFecha)} ${getAgeStr(opt2.pensionFecha)}</p>
                 <p><strong>Convenio Especial (Total):</strong> ${fmt(opt2.convenio)}</p>
                 <p><strong>IPC Estimado:</strong> ${fmtPct(opt2.reval)}</p>
             </div>
